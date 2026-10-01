@@ -48,7 +48,7 @@
     <video id="webcam" autoplay playsinline></video>
     <canvas id="output_canvas" width="640" height="480"></canvas>
   </div>
-  
+
   <div id="text-output">Loading model...</div>
 
   <script type="module">
@@ -62,7 +62,32 @@
     const canvasElement = document.getElementById("output_canvas");
     const canvasCtx = canvasElement.getContext("2d");
     const textOutput = document.getElementById("text-output");
-    
+
+    // Add ?debug to the page URL to print every feature value to the console
+    // (useful for tuning the thresholds below).
+    const DEBUG = new URLSearchParams(location.search).has("debug");
+
+    // ------------------------------------------------------------------
+    // Tunable settings
+    // ------------------------------------------------------------------
+    const CONFIG = {
+      smoothing: 0.55,        // landmark EMA weight of the newest frame (1 = no smoothing)
+      stableFrames: 4,        // frames a new result must persist before it is shown
+      handLostGraceMs: 350,   // keep the last result this long if the hand briefly drops out
+      fingerAngle: { min: 100, max: 165 }, // PIP joint angle (deg): curled -> straight
+      fingerOn: 0.60,         // smoothed extension score needed to count as extended
+      fingerOff: 0.35,        // score it must fall below to count as curled again (hysteresis)
+      thumbAcrossOn: 0.38,    // thumb tip this close to the fingers/palm (x palm size) = "across"
+      thumbAcrossOff: 0.50,   // ...and must move this far away to stop being "across"
+      thumbOut: 0.85,         // thumb tip to index PIP distance (x palm) above this = "out"
+      touch: 0.30,            // thumb tip to fingertip distance (x palm) counted as touching
+      spreadApart: 1.5,       // index/middle tip gap vs. knuckle gap above this = "apart"
+      curvedAvg: { min: 0.15, max: 0.70 } // average finger score range for C / O shapes
+    };
+
+    const UNKNOWN = "Unknown Gesture";
+    const NOHAND = "No hand detected";
+
     let handLandmarker;
     let lastVideoTime = -1;
     let gestureDictionary = {};
@@ -72,38 +97,54 @@
       try {
         const response = await fetch('gestures.json');
         gestureDictionary = await response.json();
+        return true;
       } catch (err) {
-        console.error("Could not load gestures.json", err);
+        console.error("Could not load gestures.json (serve the folder over http, not file://)", err);
         textOutput.innerText = "Error loading JSON";
+        return false;
       }
     }
 
     // Initialize the HandLandmarker model
     async function initializeHandTracker() {
-      await loadGestures();
-      
+      if (!(await loadGestures())) return;
+
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
       );
-      
-      handLandmarker = await HandLandmarker.createFromOptions(vision, {
+
+      const options = (delegate) => ({
         baseOptions: {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-          delegate: "GPU"
+          delegate
         },
         runningMode: "VIDEO",
-        numHands: 1, 
-        minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5
+        numHands: 1,
+        minHandDetectionConfidence: 0.6,
+        minHandPresenceConfidence: 0.6,
+        minTrackingConfidence: 0.6
       });
-      
+
+      try {
+        handLandmarker = await HandLandmarker.createFromOptions(vision, options("GPU"));
+      } catch (err) {
+        console.warn("GPU delegate unavailable, falling back to CPU", err);
+        handLandmarker = await HandLandmarker.createFromOptions(vision, options("CPU"));
+      }
+
       startWebcam();
     }
 
     async function startWebcam() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            frameRate: { ideal: 30 },
+            facingMode: "user"
+          }
+        });
         video.srcObject = stream;
         video.addEventListener("loadeddata", predictWebcam);
         textOutput.innerText = "Show a gesture";
@@ -112,70 +153,276 @@
       }
     }
 
-    // Helper function to calculate distance between two landmarks
-    function getDistance(p1, p2) {
-      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    // ------------------------------------------------------------------
+    // Geometry helpers
+    // ------------------------------------------------------------------
+    const clamp01 = (v) => Math.max(0, Math.min(1, v));
+    const d3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+
+    // Angle (degrees) at point b formed by a-b-c, in 3D
+    function angleAt(a, b, c) {
+      const ux = a.x - b.x, uy = a.y - b.y, uz = a.z - b.z;
+      const vx = c.x - b.x, vy = c.y - b.y, vz = c.z - b.z;
+      const dot = ux * vx + uy * vy + uz * vz;
+      const mag = Math.hypot(ux, uy, uz) * Math.hypot(vx, vy, vz) || 1e-9;
+      return Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180 / Math.PI;
     }
 
-    // Distance-based logic to determine if fingers are extended (rotation-invariant)
-    function getFingerStates(landmarks) {
-      const wrist = landmarks[0];
-      
-      // For the 4 main fingers: check if the tip is further from the wrist than the middle joint (PIP)
-      const isExtended = (tip, pip) => {
-        return getDistance(wrist, landmarks[tip]) > getDistance(wrist, landmarks[pip]) ? 1 : 0;
-      };
+    // Direction of the vector a->b as seen on screen: "up" | "down" | "side"
+    function dirOf(I, a, b, vw, vh) {
+      const dx = (I[b].x - I[a].x) * vw;
+      const dy = (I[b].y - I[a].y) * vh;
+      const deg = Math.atan2(-dy, dx) * 180 / Math.PI;
+      if (deg > 45 && deg < 135) return "up";
+      if (deg < -45 && deg > -135) return "down";
+      return "side";
+    }
 
-      const index = isExtended(8, 6);
-      const middle = isExtended(12, 10);
-      const ring = isExtended(16, 14);
-      const pinky = isExtended(20, 18);
-      
-      // Thumb logic: Measure if thumb tip is further from the pinky base than the thumb knuckle is
-      const pinkyBase = landmarks[17];
-      const thumb = getDistance(pinkyBase, landmarks[4]) > getDistance(pinkyBase, landmarks[3]) ? 1 : 0;
+    // ------------------------------------------------------------------
+    // Temporal smoothing + hysteresis (this is what removes the flicker)
+    // ------------------------------------------------------------------
+    let smoothW = null;   // smoothed 3D world landmarks (metric, rotation-invariant)
+    let smoothI = null;   // smoothed image landmarks (used only for direction)
+    let hystState = {};
+
+    function ema(prev, cur, a) {
+      if (!prev) return cur.map(p => ({ x: p.x, y: p.y, z: p.z || 0 }));
+      return cur.map((p, i) => ({
+        x: prev[i].x + a * (p.x - prev[i].x),
+        y: prev[i].y + a * (p.y - prev[i].y),
+        z: prev[i].z + a * ((p.z || 0) - prev[i].z)
+      }));
+    }
+
+    // Schmitt trigger: turns on above `high`, off below `low`, otherwise keeps its last state
+    function hyst(name, value, low, high) {
+      if (value > high) hystState[name] = true;
+      else if (value < low) hystState[name] = false;
+      return !!hystState[name];
+    }
+
+    function resetTracking() {
+      smoothW = null;
+      smoothI = null;
+      hystState = {};
+    }
+
+    // ------------------------------------------------------------------
+    // Feature extraction
+    // ------------------------------------------------------------------
+    const FINGERS = {
+      index:  [5, 6, 7, 8],
+      middle: [9, 10, 11, 12],
+      ring:   [13, 14, 15, 16],
+      pinky:  [17, 18, 19, 20]
+    };
+    const TIPS = { index: 8, middle: 12, ring: 16, pinky: 20 };
+
+    function extractFeatures(W, I, vw, vh) {
+      const palm = d3(W[0], W[9]) || 1e-6; // wrist -> middle knuckle = size reference
+
+      // Finger extension from the PIP joint angle, so it works at any hand rotation
+      // and any distance from the camera. A finger whose tip is closer to the wrist
+      // than its PIP joint is penalised (it is folded back toward the palm).
+      const score = {};
+      for (const [name, [mcp, pip, dip, tip]] of Object.entries(FINGERS)) {
+        const ang = angleAt(W[mcp], W[pip], W[dip]);
+        let s = clamp01((ang - CONFIG.fingerAngle.min) / (CONFIG.fingerAngle.max - CONFIG.fingerAngle.min));
+        if (d3(W[0], W[tip]) < d3(W[0], W[pip])) s *= 0.4;
+        score[name] = s;
+      }
+
+      // Which fingertip (if any) is the thumb touching?
+      let touch = "none", best = CONFIG.touch;
+      for (const [name, tip] of Object.entries(TIPS)) {
+        const dd = d3(W[4], W[tip]) / palm;
+        if (dd < best) { best = dd; touch = name; }
+      }
+
+      // Extended / curled with hysteresis
+      const ext = {};
+      for (const name of Object.keys(FINGERS)) {
+        ext[name] = hyst("f_" + name, score[name], CONFIG.fingerOff, CONFIG.fingerOn);
+      }
+      // A finger touching the thumb is forming a ring, so count it as curled
+      if (touch !== "none" && score[touch] < 0.8) ext[touch] = false;
+
+      // Thumb: tucked across the palm / alongside the hand / sticking out
+      const acrossDist = Math.min(d3(W[4], W[10]), d3(W[4], W[13]), d3(W[4], W[14])) / palm;
+      const across = hyst("thumbAcross", -acrossDist, -CONFIG.thumbAcrossOff, -CONFIG.thumbAcrossOn);
+      const outRatio = d3(W[4], W[6]) / palm;
+      const thumbPos = across ? "across" : (outRatio > CONFIG.thumbOut ? "out" : "side");
+      const thumb = thumbPos === "across" ? 0 : 1;
+
+      // Overall shape: gently curled fingers (C / O)
+      const vals = Object.values(score);
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const shape = (avg > CONFIG.curvedAvg.min && avg < CONFIG.curvedAvg.max && Math.max(...vals) < 0.85)
+        ? "curved" : "none";
+
+      // Hooked index finger (X)
+      const hookIndex = score.index > 0.2 && score.index < 0.62 &&
+        score.middle < 0.2 && score.ring < 0.2 && score.pinky < 0.2;
+
+      // Index/middle fingers apart (V, K, 4) or together (U, H, B)
+      const spreadRatio = d3(W[8], W[12]) / (d3(W[5], W[9]) || 1e-6);
+      const spread = spreadRatio > CONFIG.spreadApart ? "apart" : "together";
 
       // Manually format the string to match gestures.json exactly
-      return `[${thumb}, ${index}, ${middle}, ${ring}, ${pinky}]`;
+      const key = `[${thumb}, ${+ext.index}, ${+ext.middle}, ${+ext.ring}, ${+ext.pinky}]`;
+
+      return {
+        key,
+        thumbPos,
+        touch,
+        shape,
+        hookIndex,
+        spread,
+        handDir:  dirOf(I, 0, 9, vw, vh),
+        thumbDir: dirOf(I, 2, 4, vw, vh),
+        indexDir: dirOf(I, 5, 8, vw, vh),
+        _scores: score
+      };
     }
 
+    // ------------------------------------------------------------------
+    // Gesture lookup
+    //
+    // gestures.json entries can be:
+    //   "[t, i, m, r, p]": "Label"                       (plain label, as before)
+    //   "[t, i, m, r, p]": [ {"when": {...}, "label": "X"}, "Fallback label" ]
+    //   "*": [ {"when": {...}, "label": "X"} ]           (rules that ignore the finger key)
+    // `when` compares against the extracted features; a list value means "any of these".
+    // ------------------------------------------------------------------
+    function rulesOf(entry) {
+      if (entry == null) return [];
+      return (Array.isArray(entry) ? entry : [entry])
+        .map(r => (typeof r === "string" ? { label: r } : r));
+    }
+
+    function matches(when, f) {
+      return Object.entries(when).every(([k, v]) =>
+        Array.isArray(v) ? v.includes(f[k]) : f[k] === v);
+    }
+
+    // When the thumb touches a fingertip, its open/closed bit is ambiguous, so also
+    // try the key with the thumb bit flipped.
+    function flipThumb(key) {
+      return key.slice(0, 1) + (key[1] === "1" ? "0" : "1") + key.slice(2);
+    }
+
+    function lookupGesture(f) {
+      const keys = [f.key];
+      if (f.touch !== "none") keys.push(flipThumb(f.key));
+
+      for (const r of rulesOf(gestureDictionary["*"])) {
+        if (r.when && matches(r.when, f)) return r.label;
+      }
+      for (const k of keys) {
+        for (const r of rulesOf(gestureDictionary[k])) {
+          if (r.when && matches(r.when, f)) return r.label;
+        }
+      }
+      for (const r of rulesOf(gestureDictionary[f.key])) {
+        if (!r.when) return r.label;
+      }
+      return null;
+    }
+
+    // ------------------------------------------------------------------
+    // Output with debouncing: a new result must be stable for a few frames
+    // ------------------------------------------------------------------
+    let shownState = null;
+    let pendingState = null;
+    let pendingCount = 0;
+    let lastLoggedKey = "";
+    let lastDebugTime = 0;
+
+    function render(state) {
+      if (state === NOHAND) {
+        textOutput.innerText = NOHAND;
+        textOutput.style.color = "#666";
+      } else if (state === UNKNOWN) {
+        textOutput.innerText = UNKNOWN;
+        textOutput.style.color = "#FF8800";
+      } else {
+        textOutput.innerText = state;
+        textOutput.style.color = "#00FF00";
+      }
+    }
+
+    function commit(state, immediate = false) {
+      if (state === shownState) { pendingState = null; pendingCount = 0; return; }
+      if (state !== pendingState) { pendingState = state; pendingCount = 1; }
+      else pendingCount++;
+      if (immediate || shownState === null || pendingCount >= CONFIG.stableFrames) {
+        shownState = state;
+        pendingState = null;
+        pendingCount = 0;
+        render(state);
+      }
+    }
+
+    // Fall back to image landmarks (scaled to pixels) if world landmarks are missing
+    function toPseudoWorld(landmarks, vw, vh) {
+      return landmarks.map(p => ({ x: p.x * vw, y: p.y * vh, z: (p.z || 0) * vw }));
+    }
+
+    let handLostSince = null;
+
     async function predictWebcam() {
-      if (video.currentTime !== lastVideoTime) {
+      if (video.currentTime !== lastVideoTime && video.readyState >= 2) {
         lastVideoTime = video.currentTime;
-        
-        const results = handLandmarker.detectForVideo(video, performance.now());
-        
+
+        const now = performance.now();
+        const results = handLandmarker.detectForVideo(video, now);
+
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        
+
         if (results.landmarks && results.landmarks.length > 0) {
           const landmarks = results.landmarks[0];
-          
+          handLostSince = null;
+
           // Draw the hand
           const drawingUtils = new DrawingUtils(canvasCtx);
           drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 2 });
           drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 2, radius: 3 });
 
-          // Calculate finger states and look up in JSON
-          const currentStateStr = getFingerStates(landmarks);
-          
+          // Smooth landmarks, then classify
+          const vw = video.videoWidth || 640;
+          const vh = video.videoHeight || 480;
+          const world = (results.worldLandmarks && results.worldLandmarks[0])
+            || toPseudoWorld(landmarks, vw, vh);
+          smoothW = ema(smoothW, world, CONFIG.smoothing);
+          smoothI = ema(smoothI, landmarks, CONFIG.smoothing);
+
+          const features = extractFeatures(smoothW, smoothI, vw, vh);
+
           // Log the array to the browser console so you can easily map new gestures
-          console.log(currentStateStr); 
-          
-          if (gestureDictionary[currentStateStr]) {
-            textOutput.innerText = gestureDictionary[currentStateStr];
-            textOutput.style.color = "#00FF00";
-          } else {
-            textOutput.innerText = "Unknown Gesture";
-            textOutput.style.color = "#FF8800"; 
+          if (features.key !== lastLoggedKey) {
+            lastLoggedKey = features.key;
+            console.log(features.key);
           }
+          if (DEBUG && now - lastDebugTime > 250) {
+            lastDebugTime = now;
+            console.log(JSON.stringify(features, (k, v) =>
+              typeof v === "number" ? Math.round(v * 100) / 100 : v));
+          }
+
+          commit(lookupGesture(features) ?? UNKNOWN);
         } else {
-            textOutput.innerText = "No hand detected";
-            textOutput.style.color = "#666";
+          // Tolerate brief tracking dropouts before declaring the hand gone
+          if (handLostSince === null) handLostSince = now;
+          if (now - handLostSince > CONFIG.handLostGraceMs) {
+            resetTracking();
+            lastLoggedKey = "";
+            commit(NOHAND, true);
+          }
         }
         canvasCtx.restore();
       }
-      
+
       requestAnimationFrame(predictWebcam);
     }
 
