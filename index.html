@@ -2,25 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>dotacs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --paper: #e8ecf3;
+      --surface: #f8f9fc;
+      --ink: #13151f;
+      --ink-2: #1c1f2c;
+      --muted: #5d6475;
+      --line: #cfd5e1;
+      --cobalt: #3346ff;
+      --cobalt-soft: #dfe3ff;
+      --marigold: #ffb319;
+      --coral: #ff5a4d;
+      --font: "Bricolage Grotesque", "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font);
+      font-variation-settings: "wdth" 92;
+    }
+    button { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+
+    /* ---------- page frame ---------- */
+    .top {
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
-      background-color: #1a1a1a;
-      font-family: sans-serif;
+      justify-content: space-between;
+      padding: 20px 32px 0;
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand .mark {
+      width: 22px; height: 22px;
+      border-radius: 50% 50% 50% 6px;
+      background: var(--cobalt);
+      box-shadow: 9px -7px 0 -4px var(--marigold);
+    }
+    #status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px 6px 12px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    #status i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    #status[data-tone="ok"] i { background: #22a06b; }
+    #status[data-tone="error"] i { background: var(--coral); }
+    #status[data-tone="busy"] i { background: var(--marigold); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 680px) minmax(300px, 1fr);
+      gap: 28px;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 20px 32px 40px;
+      align-items: start;
+    }
+
+    /* ---------- stage: video + live captions in one slab ---------- */
+    .stage {
+      background: var(--ink);
+      border-radius: 22px;
+      padding: 10px;
+      box-shadow: 0 24px 50px -28px rgba(19, 21, 31, 0.7);
     }
     .video-container {
       position: relative;
-      width: 640px;
-      height: 480px;
-      border: 4px solid #333;
-      border-radius: 8px;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 14px;
       overflow: hidden;
+      background: #000;
     }
     video, canvas {
       position: absolute;
@@ -30,59 +105,321 @@
       height: 100%;
       transform: scaleX(-1); /* Mirror effect */
     }
-    #text-output {
-      margin-top: 20px;
-      padding: 15px 30px;
-      background-color: #333;
-      color: #00FF00;
-      font-size: 2rem;
+    .hud {
+      position: absolute;
+      top: 12px;
+      display: flex;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .hud.left { left: 12px; }
+    .hud.right { right: 12px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 11px 4px 9px;
+      border-radius: 999px;
+      background: rgba(19, 21, 31, 0.68);
+      backdrop-filter: blur(6px);
+      color: #fff;
+      font-size: 0.82rem;
+    }
+    .chip i { width: 7px; height: 7px; border-radius: 50%; background: #7b8194; }
+    .chip[data-on="1"] i { background: var(--marigold); }
+    #motion-chip[data-on="1"] i { background: #8fa0ff; box-shadow: 0 0 0 4px rgba(143, 160, 255, 0.35); }
+
+    #motion-toast {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      padding: 8px 20px;
+      border-radius: 12px;
+      background: var(--marigold);
+      color: var(--ink);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #motion-toast.show { animation: toast 1.5s ease-out; }
+    @keyframes toast {
+      0%   { opacity: 0; transform: translate(-50%, 10px) scale(0.92); }
+      12%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      75%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* captions */
+    .captions { padding: 18px 10px 6px; }
+    .sentence {
+      min-height: 4.2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 8px;
+      align-content: flex-start;
+      font-size: 1.7rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: #fff;
+    }
+    .sentence .placeholder { color: rgba(255, 255, 255, 0.45); font-weight: 400; font-size: 1.15rem; letter-spacing: 0; }
+    .tok { padding: 4px 12px 6px; border-radius: 10px; }
+    .tok.whole { background: var(--cobalt); }
+    .tok.spelled { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
+    .tok.live { color: var(--marigold); box-shadow: inset 0 0 0 2px var(--marigold); letter-spacing: 0.04em; }
+    .tok.live::after {
+      content: "";
+      display: inline-block;
+      width: 3px; height: 1.05em;
+      margin-left: 4px;
+      vertical-align: -0.12em;
+      background: var(--marigold);
+      animation: blink 1s steps(2, start) infinite;
+    }
+    @keyframes blink { to { visibility: hidden; } }
+    .tok.pop { animation: pop 0.28s ease-out; }
+    @keyframes pop { from { transform: scale(0.85); } to { transform: scale(1); } }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 10px 8px; }
+    .actions button {
+      padding: 7px 15px;
       border-radius: 8px;
-      min-width: 300px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.92rem;
+    }
+    .actions button:hover { background: rgba(255, 255, 255, 0.1); }
+    .actions button.primary { background: var(--marigold); border-color: var(--marigold); color: var(--ink); font-weight: 600; }
+    .actions button.primary:hover { background: #ffc447; }
+    .actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .actions .spacer { flex: 1; }
+
+    /* ---------- side column ---------- */
+    .side { display: grid; gap: 20px; }
+
+    .readout {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 20px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .ring { position: relative; width: 68px; height: 68px; flex: none; }
+    .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring circle { fill: none; stroke-width: 5; }
+    .ring .track { stroke: var(--line); }
+    .ring #ring-fg { stroke: var(--cobalt); stroke-linecap: round; transition: stroke-dashoffset 0.08s linear; }
+    .ring[data-done="1"] #ring-fg { stroke: #22a06b; }
+    .ring.flash { animation: flash 0.45s ease-out; }
+    @keyframes flash { 0% { transform: scale(1.14); } 100% { transform: scale(1); } }
+
+    #text-output {
+      font-size: 2.1rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      color: #22a06b;
+      overflow-wrap: anywhere;
+    }
+    #text-output[data-state="unknown"] { color: #d9731c; }
+    #text-output[data-state="none"] { color: #98a0b3; }
+    #text-output[data-state="idle"] { color: var(--ink); }
+    #readout-hint { margin-top: 5px; color: var(--muted); font-size: 0.95rem; min-height: 1.2em; }
+
+    .guide {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .guide-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 20px 0; }
+    .guide-head h2 { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .tabs { display: flex; gap: 18px; }
+    .tabs button {
+      background: none; border: 0; padding: 0 0 8px; cursor: pointer;
+      color: var(--muted);
+      border-bottom: 3px solid transparent;
+    }
+    .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--cobalt); font-weight: 600; }
+    #guide-body {
+      padding: 14px 14px 16px;
+      max-height: 430px;
+      overflow-y: auto;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 8px;
+      align-content: start;
+    }
+    .tile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      min-width: 0;
+    }
+    .tile .glyph {
+      flex: none;
+      min-width: 30px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--cobalt);
       text-align: center;
+    }
+    .tile .glyph.word { font-size: 0.98rem; text-align: left; min-width: 0; color: var(--ink); }
+    .tile .how { font-size: 0.8rem; line-height: 1.25; color: var(--muted); }
+    .tile.motion { border-left: 4px solid var(--marigold); }
+    .tile.live { background: var(--cobalt-soft); border-color: var(--cobalt); }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: minmax(0, 1fr); padding: 16px 16px 32px; }
+      .top { padding: 16px 16px 0; }
+      .sentence { font-size: 1.4rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <div class="video-container">
-    <video id="webcam" autoplay playsinline></video>
-    <canvas id="output_canvas" width="640" height="480"></canvas>
-  </div>
+  <header class="top">
+    <div class="brand"><span class="mark"></span>dotacs</div>
+    <div id="status" data-tone="busy"><i></i><span>Loading model...</span></div>
+  </header>
 
-  <div id="text-output">Loading model...</div>
+  <main class="layout">
+    <section class="stage">
+      <div class="video-container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="output_canvas" width="640" height="480"></canvas>
+        <div class="hud left"><span class="chip" id="hand-chip" data-on="0"><i></i><span>No hand</span></span></div>
+        <div class="hud right"><span class="chip" id="motion-chip" data-on="0"><i></i><span>Still</span></span></div>
+        <div id="motion-toast" aria-hidden="true"></div>
+      </div>
+
+      <div class="captions">
+        <div id="sentence" class="sentence" aria-live="polite"></div>
+      </div>
+      <div class="actions">
+        <button id="btn-speak" class="primary" title="Read the sentence aloud (Enter)">Speak</button>
+        <button id="btn-space" title="Finish the word you are spelling (Space)">Next word</button>
+        <button id="btn-back" title="Remove the last letter or word (Backspace)">Undo</button>
+        <button id="btn-copy" title="Copy the sentence as text">Copy</button>
+        <span class="spacer"></span>
+        <button id="btn-clear" title="Start over (Escape)">Clear</button>
+      </div>
+    </section>
+
+    <section class="side">
+      <div class="readout">
+        <div class="ring" id="ring" data-done="0">
+          <svg viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="track" cx="22" cy="22" r="18"></circle>
+            <circle id="ring-fg" cx="22" cy="22" r="18"></circle>
+          </svg>
+        </div>
+        <div>
+          <div id="text-output" data-state="idle">Loading model...</div>
+          <div id="readout-hint"></div>
+        </div>
+      </div>
+
+      <div class="guide">
+        <div class="guide-head">
+          <h2>Sign guide</h2>
+          <div class="tabs" role="tablist">
+            <button role="tab" data-tab="letters" aria-selected="true">Letters and numbers</button>
+            <button role="tab" data-tab="words" aria-selected="false">Words</button>
+          </div>
+        </div>
+        <div id="guide-body"></div>
+      </div>
+    </section>
+  </main>
 
   <script type="module">
     import {
       HandLandmarker,
-      FilesetResolver,
-      DrawingUtils
+      FilesetResolver
     } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
 
-    const video = document.getElementById("webcam");
-    const canvasElement = document.getElementById("output_canvas");
+    const $ = (id) => document.getElementById(id);
+    const video = $("webcam");
+    const canvasElement = $("output_canvas");
     const canvasCtx = canvasElement.getContext("2d");
-    const textOutput = document.getElementById("text-output");
+    const textOutput = $("text-output");
+    const readoutHint = $("readout-hint");
+    const ringEl = $("ring");
+    const ringFg = $("ring-fg");
+    const statusEl = $("status");
+    const handChip = $("hand-chip");
+    const motionChip = $("motion-chip");
+    const motionToast = $("motion-toast");
+    const sentenceEl = $("sentence");
+    const guideBody = $("guide-body");
 
-    // Add ?debug to the page URL to print every feature value to the console
-    // (useful for tuning the thresholds below).
+    // Add ?debug to the page URL to print feature values and motion analysis to the console.
     const DEBUG = new URLSearchParams(location.search).has("debug");
 
     // ------------------------------------------------------------------
     // Tunable settings
     // ------------------------------------------------------------------
     const CONFIG = {
-      smoothing: 0.55,        // landmark EMA weight of the newest frame (1 = no smoothing)
-      stableFrames: 4,        // frames a new result must persist before it is shown
-      handLostGraceMs: 350,   // keep the last result this long if the hand briefly drops out
-      fingerAngle: { min: 100, max: 165 }, // PIP joint angle (deg): curled -> straight
-      fingerOn: 0.60,         // smoothed extension score needed to count as extended
-      fingerOff: 0.35,        // score it must fall below to count as curled again (hysteresis)
-      thumbAcrossOn: 0.38,    // thumb tip this close to the fingers/palm (x palm size) = "across"
-      thumbAcrossOff: 0.50,   // ...and must move this far away to stop being "across"
-      thumbOut: 0.85,         // thumb tip to index PIP distance (x palm) above this = "out"
-      touch: 0.30,            // thumb tip to fingertip distance (x palm) counted as touching
-      spreadApart: 1.5,       // index/middle tip gap vs. knuckle gap above this = "apart"
-      curvedAvg: { min: 0.15, max: 0.70 } // average finger score range for C / O shapes
+      // static hand shape
+      smoothing: 0.55,
+      stableFrames: 4,
+      handLostGraceMs: 350,
+      fingerAngle: { min: 100, max: 165 },
+      fingerOn: 0.60,
+      fingerOff: 0.35,
+      thumbAcrossOn: 0.38,
+      thumbAcrossOff: 0.50,
+      thumbOut: 0.85,
+      touch: 0.30,
+      spreadApart: 1.5,
+      curvedAvg: { min: 0.15, max: 0.70 },
+
+      // adding signs to the sentence
+      hold: {
+        holdMs: 700,        // hold a still sign this long to add it
+        repeatMs: 1500,     // keep holding a letter this long to type it again (double letters)
+        wordGapMs: 2200,    // pause this long and the spelled letters become a word
+        stillSpeed: 0.8,    // palm lengths/second; faster than this counts as moving
+        afterMotionMs: 1500 // ignore held shapes right after a motion sign
+      },
+
+      // motion (all distances are in palm lengths, so they work at any distance)
+      motion: {
+        startSpeed: 1.0,
+        stopSpeed: 0.5,
+        stopMs: 220,
+        minMs: 280,
+        maxMs: 2600,
+        minPath: 0.8,
+        swingAmp: 0.3,                 // smallest back-and-forth stroke that counts
+        minCircleTurn: 1.5 * Math.PI,  // about 270 degrees
+        minSwipe: 1.0,
+        repeatBlockMs: 1800            // ignore the same motion sign repeating this soon
+      },
+
+      // finger flapping (bye, come here)
+      flap: { windowMs: 1600, minCloses: 2, high: 0.65, low: 0.35, maxSpeed: 0.8, cooldownMs: 1500 },
+
+      // path templates (J, Z)
+      template: { points: 32, maxDist: 0.22 }
     };
 
     const UNKNOWN = "Unknown Gesture";
@@ -92,22 +429,53 @@
     let lastVideoTime = -1;
     let gestureDictionary = {};
 
-    // Load the JSON mappings
+    // ------------------------------------------------------------------
+    // Status helpers
+    // ------------------------------------------------------------------
+    function setStatus(text, tone) {
+      statusEl.dataset.tone = tone;
+      statusEl.querySelector("span").textContent = text;
+    }
+
+    // ------------------------------------------------------------------
+    // Loading
+    // ------------------------------------------------------------------
+    function normRule(r) {
+      if (typeof r === "string") r = { label: r };
+      const say = r.say ?? r.label;
+      const kind = r.kind ?? (/^[A-Za-z]$/.test(say) ? "letter" : /^\d$/.test(say) ? "number" : "word");
+      return Object.assign(r, { say, kind });
+    }
+
+    function normalizeDictionary(dict) {
+      const motions = (dict.motions || []).map(normRule);
+      for (const key of Object.keys(dict)) {
+        if (key === "motions") continue;
+        const v = dict[key];
+        dict[key] = (Array.isArray(v) ? v : [v]).map(normRule);
+      }
+      dict.motions = motions;
+      return dict;
+    }
+
     async function loadGestures() {
       try {
         const response = await fetch('gestures.json');
-        gestureDictionary = await response.json();
+        gestureDictionary = normalizeDictionary(await response.json());
         return true;
       } catch (err) {
         console.error("Could not load gestures.json (serve the folder over http, not file://)", err);
         textOutput.innerText = "Error loading JSON";
+        textOutput.dataset.state = "unknown";
+        setStatus("gestures.json failed to load", "error");
         return false;
       }
     }
 
-    // Initialize the HandLandmarker model
     async function initializeHandTracker() {
       if (!(await loadGestures())) return;
+      buildGuide();
+      renderSentence();
 
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
@@ -148,8 +516,12 @@
         video.srcObject = stream;
         video.addEventListener("loadeddata", predictWebcam);
         textOutput.innerText = "Show a gesture";
+        textOutput.dataset.state = "idle";
+        setStatus("Camera on", "ok");
       } catch (err) {
         textOutput.innerText = "Camera access denied";
+        textOutput.dataset.state = "unknown";
+        setStatus("Camera access denied", "error");
       }
     }
 
@@ -159,7 +531,6 @@
     const clamp01 = (v) => Math.max(0, Math.min(1, v));
     const d3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
-    // Angle (degrees) at point b formed by a-b-c, in 3D
     function angleAt(a, b, c) {
       const ux = a.x - b.x, uy = a.y - b.y, uz = a.z - b.z;
       const vx = c.x - b.x, vy = c.y - b.y, vz = c.z - b.z;
@@ -168,7 +539,6 @@
       return Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180 / Math.PI;
     }
 
-    // Direction of the vector a->b as seen on screen: "up" | "down" | "side"
     function dirOf(I, a, b, vw, vh) {
       const dx = (I[b].x - I[a].x) * vw;
       const dy = (I[b].y - I[a].y) * vh;
@@ -179,10 +549,10 @@
     }
 
     // ------------------------------------------------------------------
-    // Temporal smoothing + hysteresis (this is what removes the flicker)
+    // Temporal smoothing + hysteresis
     // ------------------------------------------------------------------
-    let smoothW = null;   // smoothed 3D world landmarks (metric, rotation-invariant)
-    let smoothI = null;   // smoothed image landmarks (used only for direction)
+    let smoothW = null;
+    let smoothI = null;
     let hystState = {};
 
     function ema(prev, cur, a) {
@@ -194,21 +564,14 @@
       }));
     }
 
-    // Schmitt trigger: turns on above `high`, off below `low`, otherwise keeps its last state
     function hyst(name, value, low, high) {
       if (value > high) hystState[name] = true;
       else if (value < low) hystState[name] = false;
       return !!hystState[name];
     }
 
-    function resetTracking() {
-      smoothW = null;
-      smoothI = null;
-      hystState = {};
-    }
-
     // ------------------------------------------------------------------
-    // Feature extraction
+    // Static hand-shape features
     // ------------------------------------------------------------------
     const FINGERS = {
       index:  [5, 6, 7, 8],
@@ -219,11 +582,8 @@
     const TIPS = { index: 8, middle: 12, ring: 16, pinky: 20 };
 
     function extractFeatures(W, I, vw, vh) {
-      const palm = d3(W[0], W[9]) || 1e-6; // wrist -> middle knuckle = size reference
+      const palm = d3(W[0], W[9]) || 1e-6;
 
-      // Finger extension from the PIP joint angle, so it works at any hand rotation
-      // and any distance from the camera. A finger whose tip is closer to the wrist
-      // than its PIP joint is penalised (it is folded back toward the palm).
       const score = {};
       for (const [name, [mcp, pip, dip, tip]] of Object.entries(FINGERS)) {
         const ang = angleAt(W[mcp], W[pip], W[dip]);
@@ -232,52 +592,40 @@
         score[name] = s;
       }
 
-      // Which fingertip (if any) is the thumb touching?
       let touch = "none", best = CONFIG.touch;
       for (const [name, tip] of Object.entries(TIPS)) {
         const dd = d3(W[4], W[tip]) / palm;
         if (dd < best) { best = dd; touch = name; }
       }
 
-      // Extended / curled with hysteresis
       const ext = {};
       for (const name of Object.keys(FINGERS)) {
         ext[name] = hyst("f_" + name, score[name], CONFIG.fingerOff, CONFIG.fingerOn);
       }
-      // A finger touching the thumb is forming a ring, so count it as curled
       if (touch !== "none" && score[touch] < 0.8) ext[touch] = false;
 
-      // Thumb: tucked across the palm / alongside the hand / sticking out
       const acrossDist = Math.min(d3(W[4], W[10]), d3(W[4], W[13]), d3(W[4], W[14])) / palm;
       const across = hyst("thumbAcross", -acrossDist, -CONFIG.thumbAcrossOff, -CONFIG.thumbAcrossOn);
       const outRatio = d3(W[4], W[6]) / palm;
       const thumbPos = across ? "across" : (outRatio > CONFIG.thumbOut ? "out" : "side");
-      const thumb = thumbPos === "across" ? 0 : 1;
+      ext.thumb = thumbPos !== "across";
+      const thumb = ext.thumb ? 1 : 0;
 
-      // Overall shape: gently curled fingers (C / O)
       const vals = Object.values(score);
       const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
       const shape = (avg > CONFIG.curvedAvg.min && avg < CONFIG.curvedAvg.max && Math.max(...vals) < 0.85)
         ? "curved" : "none";
 
-      // Hooked index finger (X)
       const hookIndex = score.index > 0.2 && score.index < 0.62 &&
         score.middle < 0.2 && score.ring < 0.2 && score.pinky < 0.2;
 
-      // Index/middle fingers apart (V, K, 4) or together (U, H, B)
       const spreadRatio = d3(W[8], W[12]) / (d3(W[5], W[9]) || 1e-6);
       const spread = spreadRatio > CONFIG.spreadApart ? "apart" : "together";
 
-      // Manually format the string to match gestures.json exactly
       const key = `[${thumb}, ${+ext.index}, ${+ext.middle}, ${+ext.ring}, ${+ext.pinky}]`;
 
       return {
-        key,
-        thumbPos,
-        touch,
-        shape,
-        hookIndex,
-        spread,
+        key, thumbPos, touch, shape, hookIndex, spread, ext,
         handDir:  dirOf(I, 0, 9, vw, vh),
         thumbDir: dirOf(I, 2, 4, vw, vh),
         indexDir: dirOf(I, 5, 8, vw, vh),
@@ -286,84 +634,650 @@
     }
 
     // ------------------------------------------------------------------
-    // Gesture lookup
-    //
-    // gestures.json entries can be:
-    //   "[t, i, m, r, p]": "Label"                       (plain label, as before)
-    //   "[t, i, m, r, p]": [ {"when": {...}, "label": "X"}, "Fallback label" ]
-    //   "*": [ {"when": {...}, "label": "X"} ]           (rules that ignore the finger key)
-    // `when` compares against the extracted features; a list value means "any of these".
+    // Gesture lookup (see gestures.json)
     // ------------------------------------------------------------------
-    function rulesOf(entry) {
-      if (entry == null) return [];
-      return (Array.isArray(entry) ? entry : [entry])
-        .map(r => (typeof r === "string" ? { label: r } : r));
-    }
-
     function matches(when, f) {
       return Object.entries(when).every(([k, v]) =>
         Array.isArray(v) ? v.includes(f[k]) : f[k] === v);
     }
 
-    // When the thumb touches a fingertip, its open/closed bit is ambiguous, so also
-    // try the key with the thumb bit flipped.
     function flipThumb(key) {
       return key.slice(0, 1) + (key[1] === "1" ? "0" : "1") + key.slice(2);
     }
+
+    const rulesOf = (k) => gestureDictionary[k] || [];
 
     function lookupGesture(f) {
       const keys = [f.key];
       if (f.touch !== "none") keys.push(flipThumb(f.key));
 
-      for (const r of rulesOf(gestureDictionary["*"])) {
-        if (r.when && matches(r.when, f)) return r.label;
-      }
+      for (const r of rulesOf("*")) if (r.when && matches(r.when, f)) return r;
       for (const k of keys) {
-        for (const r of rulesOf(gestureDictionary[k])) {
-          if (r.when && matches(r.when, f)) return r.label;
-        }
+        for (const r of rulesOf(k)) if (r.when && matches(r.when, f)) return r;
       }
-      for (const r of rulesOf(gestureDictionary[f.key])) {
-        if (!r.when) return r.label;
-      }
+      for (const r of rulesOf(f.key)) if (!r.when) return r;
       return null;
     }
 
     // ------------------------------------------------------------------
-    // Output with debouncing: a new result must be stable for a few frames
+    // Sentence composer
+    // ------------------------------------------------------------------
+    const sentence = { words: [], spelling: "", lastSpellAt: 0 };
+
+    function flushSpelling() {
+      if (sentence.spelling) {
+        sentence.words.push({ text: sentence.spelling, kind: "spelled" });
+        sentence.spelling = "";
+      }
+    }
+
+    function composeText() {
+      const parts = sentence.words.map(w => w.kind === "spelled" ? w.text.toLowerCase() : w.text);
+      if (sentence.spelling) parts.push(sentence.spelling.toLowerCase());
+      const s = parts.join(" ").replace(/\bi\b/g, "I");
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function renderSentence(popLast = false) {
+      sentenceEl.textContent = "";
+      const { words, spelling } = sentence;
+      if (!words.length && !spelling) {
+        const p = document.createElement("span");
+        p.className = "placeholder";
+        p.textContent = "Spell a word or sign a phrase. Hold each sign for a moment.";
+        sentenceEl.appendChild(p);
+      } else {
+        words.forEach((w, i) => {
+          const el = document.createElement("span");
+          el.className = "tok " + (w.kind === "spelled" ? "spelled" : "whole");
+          if (popLast && !spelling && i === words.length - 1) el.classList.add("pop");
+          el.textContent = w.text;
+          sentenceEl.appendChild(el);
+        });
+        if (spelling) {
+          const el = document.createElement("span");
+          el.className = "tok live";
+          el.textContent = spelling;
+          sentenceEl.appendChild(el);
+        }
+      }
+      const empty = !words.length && !spelling;
+      $("btn-speak").disabled = empty || !("speechSynthesis" in window);
+      $("btn-copy").disabled = empty;
+      $("btn-back").disabled = empty;
+      $("btn-clear").disabled = empty;
+    }
+
+    function addToken(rule) {
+      if (rule.kind === "letter" || rule.kind === "number") {
+        sentence.spelling += rule.say;
+        sentence.lastSpellAt = performance.now();
+        renderSentence();
+      } else {
+        flushSpelling();
+        sentence.words.push({ text: rule.say, kind: "word" });
+        renderSentence(true);
+      }
+      ringEl.classList.remove("flash");
+      void ringEl.offsetWidth;
+      ringEl.classList.add("flash");
+      if (DEBUG) console.log("added", rule.say);
+    }
+
+    function undoToken() {
+      if (sentence.spelling) sentence.spelling = sentence.spelling.slice(0, -1);
+      else sentence.words.pop();
+      renderSentence();
+    }
+
+    $("btn-space").addEventListener("click", () => { flushSpelling(); renderSentence(); });
+    $("btn-back").addEventListener("click", undoToken);
+    $("btn-clear").addEventListener("click", () => { sentence.words = []; sentence.spelling = ""; renderSentence(); });
+    $("btn-speak").addEventListener("click", () => {
+      flushSpelling();
+      renderSentence();
+      const text = composeText();
+      if (!text || !("speechSynthesis" in window)) return;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+    });
+    $("btn-copy").addEventListener("click", async () => {
+      const btn = $("btn-copy");
+      try {
+        await navigator.clipboard.writeText(composeText());
+        btn.textContent = "Copied";
+      } catch (err) {
+        btn.textContent = "Copy failed";
+      }
+      setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+    });
+    document.addEventListener("keydown", (e) => {
+      const onButton = e.target instanceof HTMLElement && e.target.tagName === "BUTTON";
+      if (e.key === "Backspace") { e.preventDefault(); undoToken(); }
+      else if (e.key === "Escape") $("btn-clear").click();
+      else if (e.key === "Enter" && !onButton) $("btn-speak").click();
+      else if (e.key === " " && !onButton) { e.preventDefault(); flushSpelling(); renderSentence(); }
+    });
+    setInterval(() => {
+      if (sentence.spelling && performance.now() - sentence.lastSpellAt > CONFIG.hold.wordGapMs) {
+        flushSpelling();
+        renderSentence();
+      }
+    }, 300);
+
+    // ------------------------------------------------------------------
+    // Sign guide
+    // ------------------------------------------------------------------
+    let guideTab = "letters";
+    let guideItems = [];
+
+    function buildGuide() {
+      const seen = new Set();
+      const items = [];
+      const push = (r, how) => {
+        const id = how + ":" + r.say;
+        if (seen.has(id)) return;
+        seen.add(id);
+        items.push({ say: r.say, kind: r.kind, hint: r.hint || r.label, how });
+      };
+      for (const [k, list] of Object.entries(gestureDictionary)) {
+        if (k !== "motions") list.forEach(r => push(r, "hold"));
+      }
+      gestureDictionary.motions.forEach(r => push(r, "motion"));
+      guideItems = items;
+      renderGuide();
+    }
+
+    function renderGuide() {
+      guideBody.textContent = "";
+      const list = guideItems.filter(i => guideTab === "letters" ? i.kind !== "word" : i.kind === "word");
+      if (guideTab === "letters") {
+        list.sort((a, b) => (a.kind === b.kind
+          ? a.say.localeCompare(b.say, undefined, { numeric: true })
+          : a.kind === "letter" ? -1 : 1));
+      }
+      for (const item of list) {
+        const tile = document.createElement("div");
+        tile.className = "tile" + (item.how === "motion" ? " motion" : "");
+        tile.dataset.say = item.say;
+        const glyph = document.createElement("span");
+        glyph.className = "glyph" + (item.kind === "word" ? " word" : "");
+        glyph.textContent = item.say;
+        const how = document.createElement("span");
+        how.className = "how";
+        how.textContent = item.hint;
+        tile.append(glyph, how);
+        guideBody.appendChild(tile);
+      }
+    }
+
+    document.querySelectorAll(".tabs button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        guideTab = btn.dataset.tab;
+        document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b === btn)));
+        renderGuide();
+      });
+    });
+
+    function markLive(say) {
+      guideBody.querySelectorAll(".tile.live").forEach(el => el.classList.remove("live"));
+      if (!say) return;
+      guideBody.querySelectorAll(".tile").forEach(el => {
+        if (el.dataset.say === say && !el.classList.contains("motion")) el.classList.add("live");
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // Readout: debounced static gesture
     // ------------------------------------------------------------------
     let shownState = null;
+    let shownRule = null;
     let pendingState = null;
     let pendingCount = 0;
     let lastLoggedKey = "";
     let lastDebugTime = 0;
 
-    function render(state) {
-      if (state === NOHAND) {
-        textOutput.innerText = NOHAND;
-        textOutput.style.color = "#666";
-      } else if (state === UNKNOWN) {
-        textOutput.innerText = UNKNOWN;
-        textOutput.style.color = "#FF8800";
-      } else {
-        textOutput.innerText = state;
-        textOutput.style.color = "#00FF00";
-      }
+    function render(state, rule) {
+      textOutput.innerText = state;
+      textOutput.dataset.state = state === NOHAND ? "none" : state === UNKNOWN ? "unknown" : "ok";
+      markLive(rule ? rule.say : null);
     }
 
-    function commit(state, immediate = false) {
+    function commit(state, rule, immediate = false) {
       if (state === shownState) { pendingState = null; pendingCount = 0; return; }
       if (state !== pendingState) { pendingState = state; pendingCount = 1; }
       else pendingCount++;
       if (immediate || shownState === null || pendingCount >= CONFIG.stableFrames) {
         shownState = state;
+        shownRule = rule;
         pendingState = null;
         pendingCount = 0;
-        render(state);
+        render(state, rule);
       }
     }
 
-    // Fall back to image landmarks (scaled to pixels) if world landmarks are missing
+    // ------------------------------------------------------------------
+    // Hold-to-add
+    // ------------------------------------------------------------------
+    const RING_C = 2 * Math.PI * 18;
+    ringFg.style.strokeDasharray = RING_C;
+    ringFg.style.strokeDashoffset = RING_C;
+    let lastHint = "";
+    let suppressUntil = 0;
+    const hold = { label: null, since: 0, committed: false, commitAt: 0 };
+
+    function setRing(progress, done) {
+      ringFg.style.strokeDashoffset = RING_C * (1 - clamp01(progress));
+      ringEl.dataset.done = done ? "1" : "0";
+    }
+    function setHint(text) {
+      if (text !== lastHint) { lastHint = text; readoutHint.textContent = text; }
+    }
+
+    function updateHold(now, moving, hasHand) {
+      const H = CONFIG.hold;
+      const rule = hasHand ? shownRule : null;
+      const label = rule ? rule.label : null;
+      if (label !== hold.label) { hold.label = label; hold.since = now; hold.committed = false; }
+
+      let hint = "", progress = 0, done = false;
+      if (!rule) {
+        hold.committed = false;
+      } else if (now < suppressUntil) {
+        hold.since = now; hold.committed = false;
+        hint = "Motion sign recognised. Lower your hand to continue.";
+      } else if (moving) {
+        hold.since = now; hold.committed = false;
+        hint = "Moving";
+      } else if (!hold.committed) {
+        progress = (now - hold.since) / H.holdMs;
+        hint = `Hold to add \u201C${rule.say}\u201D`;
+        if (progress >= 1) {
+          addToken(rule);
+          hold.committed = true;
+          hold.commitAt = now;
+          progress = 1; done = true;
+          hint = `Added \u201C${rule.say}\u201D`;
+        }
+      } else {
+        done = true;
+        if (rule.kind !== "word") {
+          hint = `Added \u201C${rule.say}\u201D. Keep holding to type it again.`;
+          progress = (now - hold.commitAt) / H.repeatMs;
+          if (progress >= 1) { addToken(rule); hold.commitAt = now; progress = 0; }
+        } else {
+          hint = `Added \u201C${rule.say}\u201D`;
+          progress = 1;
+        }
+      }
+      setRing(progress, done);
+      setHint(hint);
+    }
+
+    // ------------------------------------------------------------------
+    // Motion tracking
+    // ------------------------------------------------------------------
+    const M = CONFIG.motion;
+    const buffer = [];            // recent samples (about 3.5 s)
+    let scaleEma = 0;
+    let speedEma = 0;
+    const motion = { active: false, samples: [], stillSince: null, startCount: 0 };
+    const fingerHist = [];
+    let flapCooldownUntil = 0;
+    let lastEvent = { label: null, t: 0 };
+
+    const palmCenter = (I) => {
+      const ids = [0, 5, 9, 13, 17];
+      return { x: ids.reduce((a, i) => a + I[i].x, 0) / 5, y: ids.reduce((a, i) => a + I[i].y, 0) / 5 };
+    };
+
+    function pushSample(now, I, vw, vh, say, features) {
+      const pc = palmCenter(I);
+      const scalePx = Math.hypot((I[0].x - I[9].x) * vw, (I[0].y - I[9].y) * vh) || 1;
+      scaleEma = scaleEma ? scaleEma + 0.1 * (scalePx - scaleEma) : scalePx;
+
+      // the fingertip that is "writing" (for J and Z), used for the trail too
+      const tipId = (features.ext.pinky && !features.ext.index) ? 20 : features.ext.index ? 8 : null;
+      const tip = tipId ? I[tipId] : pc;
+      const sc = features._scores;
+      const sample = {
+        t: now,
+        scale: scaleEma,
+        // display coordinates (mirrored so "right" is the user's right on screen)
+        palm:  { x: (1 - pc.x) * vw, y: pc.y * vh },
+        index: { x: (1 - I[8].x) * vw, y: I[8].y * vh },
+        pinky: { x: (1 - I[20].x) * vw, y: I[20].y * vh },
+        trail: { x: tip.x, y: tip.y },   // raw normalised, for drawing
+        say,
+        fingers: [sc.index, sc.middle, sc.ring, sc.pinky]
+      };
+      buffer.push(sample);
+      while (buffer.length && now - buffer[0].t > 3500) buffer.shift();
+      return sample;
+    }
+
+    function updateSpeed() {
+      const n = buffer.length;
+      if (n < 2) return speedEma;
+      const cur = buffer[n - 1];
+      let ref = buffer[0];
+      for (let i = n - 2; i >= 0; i--) {
+        ref = buffer[i];
+        if (cur.t - buffer[i].t >= 100) break;
+      }
+      const dt = (cur.t - ref.t) / 1000;
+      const raw = dt < 0.03 ? 0 : Math.hypot(cur.palm.x - ref.palm.x, cur.palm.y - ref.palm.y) / cur.scale / dt;
+      speedEma += 0.5 * (raw - speedEma);
+      return speedEma;
+    }
+
+    function updateMotion(now, sample, speed) {
+      if (!motion.active) {
+        motion.startCount = speed > M.startSpeed ? motion.startCount + 1 : 0;
+        if (motion.startCount >= 2) {
+          motion.active = true;
+          motion.stillSince = null;
+          motion.samples = buffer.filter(s => s.t >= now - 250);
+        }
+        return;
+      }
+      motion.samples.push(sample);
+      if (speed < M.stopSpeed) {
+        if (motion.stillSince === null) motion.stillSince = now;
+        else if (now - motion.stillSince > M.stopMs) finishMotion();
+      } else {
+        motion.stillSince = null;
+      }
+      if (motion.active && now - motion.samples[0].t > M.maxMs) finishMotion();
+    }
+
+    function resetMotion() {
+      motion.active = false;
+      motion.samples = [];
+      motion.stillSince = null;
+      motion.startCount = 0;
+    }
+
+    function finishMotion() {
+      if (!motion.samples.length) { resetMotion(); return; }
+      const endT = motion.stillSince ?? motion.samples[motion.samples.length - 1].t;
+      const segment = motion.samples.filter(s => s.t <= endT);
+      resetMotion();
+      const mf = analyzeMotion(segment);
+      if (!mf) return;
+      const rule = findMotionRule(mf, segment);
+      if (DEBUG) console.log("motion", JSON.stringify(mf), "->", rule ? rule.label : "no match");
+      if (rule) emitRule(rule);
+    }
+
+    function emitRule(rule) {
+      const now = performance.now();
+      if (rule.label === lastEvent.label && now - lastEvent.t < M.repeatBlockMs) { lastEvent.t = now; return; }
+      lastEvent = { label: rule.label, t: now };
+      suppressUntil = now + CONFIG.hold.afterMotionMs;
+      motionToast.textContent = rule.say;
+      motionToast.classList.remove("show");
+      void motionToast.offsetWidth;
+      motionToast.classList.add("show");
+      addToken(rule);
+    }
+
+    // ----- path analysis -----
+    function countSwings(vals, minAmp) {
+      let lastExt = vals[0], dir = 0, count = 0;
+      for (const v of vals) {
+        if (dir === 0) {
+          if (v - lastExt > minAmp) { dir = 1; lastExt = v; }
+          else if (lastExt - v > minAmp) { dir = -1; lastExt = v; }
+        } else if (dir === 1) {
+          if (v > lastExt) lastExt = v;
+          else if (lastExt - v > minAmp) { count++; dir = -1; lastExt = v; }
+        } else {
+          if (v < lastExt) lastExt = v;
+          else if (v - lastExt > minAmp) { count++; dir = 1; lastExt = v; }
+        }
+      }
+      return count;
+    }
+
+    function circleInfo(pts) {
+      const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+      const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+      let prev = Math.atan2(pts[0].y - cy, pts[0].x - cx), total = 0, r = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const a = Math.atan2(pts[i].y - cy, pts[i].x - cx);
+        let d = a - prev;
+        while (d > Math.PI) d -= 2 * Math.PI;
+        while (d < -Math.PI) d += 2 * Math.PI;
+        total += d;
+        prev = a;
+        r += Math.hypot(pts[i].x - cx, pts[i].y - cy);
+      }
+      return { turn: total, radius: r / pts.length };
+    }
+
+    function analyzeMotion(samples) {
+      if (samples.length < 6) return null;
+      const dur = samples[samples.length - 1].t - samples[0].t;
+      if (dur < M.minMs) return null;
+
+      const S = samples.reduce((a, s) => a + s.scale, 0) / samples.length || 1;
+      const pts = samples.map(s => ({ x: s.palm.x / S, y: s.palm.y / S }));
+      const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+      let L = 0;
+      for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+      const rangeX = Math.max(...xs) - Math.min(...xs);
+      const rangeY = Math.max(...ys) - Math.min(...ys);
+      const dx = pts[pts.length - 1].x - pts[0].x;
+      const dy = pts[pts.length - 1].y - pts[0].y;
+      const net = Math.hypot(dx, dy);
+      const swingsX = countSwings(xs, M.swingAmp);
+      const swingsY = countSwings(ys, M.swingAmp);
+
+      let kind = "other", spin = null;
+      if (L >= M.minPath) {
+        const circ = circleInfo(pts);
+        const aspect = Math.min(rangeX, rangeY) / Math.max(rangeX, rangeY, 1e-6);
+        if (Math.abs(circ.turn) >= M.minCircleTurn && circ.radius > 0.2 && aspect > 0.4) {
+          kind = "circle"; spin = circ.turn > 0 ? "cw" : "ccw";
+        } else if (swingsX >= 2 && rangeX >= 1.2 * rangeY) kind = "waveX";
+        else if (swingsY >= 2 && rangeY >= 1.2 * rangeX) kind = "shakeY";
+        else if (net >= M.minSwipe && net / L > 0.65) {
+          kind = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "swipeRight" : "swipeLeft") : (dy < 0 ? "swipeUp" : "swipeDown");
+        }
+      }
+
+      const tally = {};
+      for (const s of samples) if (s.say) tally[s.say] = (tally[s.say] || 0) + 1;
+      const hand = Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+      return { motion: kind, spin, hand, flap: "none", path: +L.toFixed(2), swingsX, swingsY };
+    }
+
+    // ----- path templates (J, Z): resample, normalise, compare -----
+    const pathLen = (pts) => {
+      let l = 0;
+      for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+      return l;
+    };
+
+    function resample(pts, n) {
+      const total = pathLen(pts);
+      if (total === 0) return null;
+      const step = total / (n - 1);
+      const src = pts.slice();
+      const out = [src[0]];
+      let D = 0;
+      for (let i = 1; i < src.length; i++) {
+        const d = Math.hypot(src[i].x - src[i - 1].x, src[i].y - src[i - 1].y);
+        if (d > 0 && D + d >= step) {
+          const t = (step - D) / d;
+          const q = { x: src[i - 1].x + t * (src[i].x - src[i - 1].x), y: src[i - 1].y + t * (src[i].y - src[i - 1].y) };
+          out.push(q);
+          src.splice(i, 0, q);
+          D = 0;
+        } else D += d;
+      }
+      while (out.length < n) out.push(src[src.length - 1]);
+      return out.slice(0, n);
+    }
+
+    function normalizePath(raw) {
+      const r = resample(raw, CONFIG.template.points);
+      if (!r) return null;
+      const cx = r.reduce((a, p) => a + p.x, 0) / r.length;
+      const cy = r.reduce((a, p) => a + p.y, 0) / r.length;
+      const w = Math.max(...r.map(p => p.x)) - Math.min(...r.map(p => p.x));
+      const h = Math.max(...r.map(p => p.y)) - Math.min(...r.map(p => p.y));
+      const s = Math.max(w, h) || 1;
+      return r.map(p => ({ x: (p.x - cx) / s, y: (p.y - cy) / s }));
+    }
+
+    const pathDist = (a, b) => a.reduce((sum, p, i) => sum + Math.hypot(p.x - b[i].x, p.y - b[i].y), 0) / a.length;
+
+    function templateDistance(samples, rule) {
+      const raw = samples.map(s => s[rule.track || "palm"]);
+      const S = samples.reduce((a, s) => a + s.scale, 0) / samples.length || 1;
+      if (pathLen(raw) / S < 0.6) return Infinity;
+      const cand = normalizePath(raw);
+      if (!cand) return Infinity;
+      rule._tpl = rule._tpl || normalizePath(rule.path.map(([x, y]) => ({ x, y })));
+      let d = pathDist(cand, rule._tpl);
+      if (rule.mirrorOk !== false) {
+        d = Math.min(d, pathDist(cand, rule._tpl.map(p => ({ x: -p.x, y: p.y }))));
+      }
+      return d;
+    }
+
+    function findMotionRule(mf, samples) {
+      let best = null, bestD = Infinity;
+      for (const r of gestureDictionary.motions) {
+        if (!r.path || !matches(r.when || {}, mf)) continue;
+        const d = templateDistance(samples, r);
+        if (DEBUG) console.log("template", r.label, d.toFixed(3));
+        if (d < (r.maxDist ?? CONFIG.template.maxDist) && d < bestD) { best = r; bestD = d; }
+      }
+      if (best) return best;
+      for (const r of gestureDictionary.motions) {
+        if (!r.path && r.when && matches(r.when, mf)) return r;
+      }
+      return null;
+    }
+
+    // ----- finger flapping (bye, come here) -----
+    function countCloses(vals, hi, lo) {
+      let state = null, closes = 0;
+      for (const v of vals) {
+        if (v >= hi) state = 1;
+        else if (v <= lo && state === 1) { closes++; state = 0; }
+      }
+      return closes;
+    }
+
+    function updateFlap(now, sample, speed) {
+      const F = CONFIG.flap;
+      fingerHist.push({ t: now, s: sample.fingers });
+      while (fingerHist.length && now - fingerHist[0].t > F.windowMs) fingerHist.shift();
+      if (now < flapCooldownUntil || motion.active || speed > F.maxSpeed || fingerHist.length < 12) return;
+
+      const closes = [0, 1, 2, 3].map(i => countCloses(fingerHist.map(h => h.s[i]), F.high, F.low));
+      const flapping = closes.map(c => c >= F.minCloses);
+      let flap = null;
+      if (flapping.every(Boolean)) flap = "all";
+      else if (flapping[0] && closes[1] < 1 && closes[2] < 1 && closes[3] < 1) flap = "index";
+      if (!flap) return;
+
+      fingerHist.length = 0;
+      flapCooldownUntil = now + F.cooldownMs;
+      const mf = { motion: "none", spin: null, hand: null, flap };
+      const rule = gestureDictionary.motions.find(r => !r.path && r.when && matches(r.when, mf));
+      if (DEBUG) console.log("flap", flap, "->", rule ? rule.label : "no match");
+      if (rule) emitRule(rule);
+    }
+
+    function resetTracking() {
+      smoothW = null;
+      smoothI = null;
+      hystState = {};
+      buffer.length = 0;
+      fingerHist.length = 0;
+      scaleEma = 0;
+      speedEma = 0;
+      resetMotion();
+    }
+
+    // ------------------------------------------------------------------
+    // Drawing: skeleton coloured by finger state, plus the motion trail
+    // ------------------------------------------------------------------
+    const COL_EXT = "#ffb319";
+    const COL_CURL = "rgba(255,255,255,0.55)";
+    const COL_PALM = "rgba(255,255,255,0.4)";
+    const groupOf = (i) => i === 0 ? "palm" : i <= 4 ? "thumb" : i <= 8 ? "index" : i <= 12 ? "middle" : i <= 16 ? "ring" : "pinky";
+
+    function drawHand(landmarks, ext) {
+      const w = canvasElement.width, h = canvasElement.height;
+      canvasCtx.lineCap = "round";
+      canvasCtx.lineWidth = 3.5;
+      for (const { start, end } of HandLandmarker.HAND_CONNECTIONS) {
+        const g1 = groupOf(start), g2 = groupOf(end);
+        const same = g1 === g2 && g1 !== "palm";
+        const on = same && ext[g1];
+        canvasCtx.strokeStyle = !same ? COL_PALM : on ? COL_EXT : COL_CURL;
+        canvasCtx.shadowColor = on ? COL_EXT : "transparent";
+        canvasCtx.shadowBlur = on ? 10 : 0;
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(landmarks[start].x * w, landmarks[start].y * h);
+        canvasCtx.lineTo(landmarks[end].x * w, landmarks[end].y * h);
+        canvasCtx.stroke();
+      }
+      canvasCtx.shadowBlur = 0;
+      landmarks.forEach((p, i) => {
+        const g = groupOf(i);
+        const isTip = i === 4 || i === 8 || i === 12 || i === 16 || i === 20;
+        const on = g !== "palm" && ext[g];
+        canvasCtx.fillStyle = on ? COL_EXT : "#ffffff";
+        canvasCtx.beginPath();
+        canvasCtx.arc(p.x * w, p.y * h, isTip ? 5.5 : 3, 0, Math.PI * 2);
+        canvasCtx.fill();
+        if (isTip) {
+          canvasCtx.strokeStyle = "rgba(19,21,31,0.7)";
+          canvasCtx.lineWidth = 1.5;
+          canvasCtx.stroke();
+        }
+      });
+    }
+
+    function drawTrail(now) {
+      const w = canvasElement.width, h = canvasElement.height;
+      const span = 700;
+      canvasCtx.lineCap = "round";
+      for (let i = 1; i < buffer.length; i++) {
+        const a = buffer[i - 1], b = buffer[i];
+        const age = now - b.t;
+        if (age > span) continue;
+        const alpha = 1 - age / span;
+        canvasCtx.strokeStyle = motion.active ? `rgba(255,255,255,${alpha})` : `rgba(143,160,255,${alpha * 0.8})`;
+        canvasCtx.shadowColor = motion.active ? "rgba(51,70,255,0.9)" : "transparent";
+        canvasCtx.shadowBlur = motion.active ? 12 : 0;
+        canvasCtx.lineWidth = (motion.active ? 3 : 2) + alpha * 4;
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(a.trail.x * w, a.trail.y * h);
+        canvasCtx.lineTo(b.trail.x * w, b.trail.y * h);
+        canvasCtx.stroke();
+      }
+      canvasCtx.shadowBlur = 0;
+    }
+
+    function setChip(chip, on, text) {
+      const label = chip.querySelector("span");
+      const flag = on ? "1" : "0";
+      if (chip.dataset.on !== flag) chip.dataset.on = flag;
+      if (label.textContent !== text) label.textContent = text;
+    }
+
+    // ------------------------------------------------------------------
+    // Main loop
+    // ------------------------------------------------------------------
     function toPseudoWorld(landmarks, vw, vh) {
       return landmarks.map(p => ({ x: p.x * vw, y: p.y * vh, z: (p.z || 0) * vw }));
     }
@@ -384,12 +1298,6 @@
           const landmarks = results.landmarks[0];
           handLostSince = null;
 
-          // Draw the hand
-          const drawingUtils = new DrawingUtils(canvasCtx);
-          drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 2 });
-          drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 2, radius: 3 });
-
-          // Smooth landmarks, then classify
           const vw = video.videoWidth || 640;
           const vh = video.videoHeight || 480;
           const world = (results.worldLandmarks && results.worldLandmarks[0])
@@ -398,8 +1306,8 @@
           smoothI = ema(smoothI, landmarks, CONFIG.smoothing);
 
           const features = extractFeatures(smoothW, smoothI, vw, vh);
+          const rule = lookupGesture(features);
 
-          // Log the array to the browser console so you can easily map new gestures
           if (features.key !== lastLoggedKey) {
             lastLoggedKey = features.key;
             console.log(features.key);
@@ -410,14 +1318,30 @@
               typeof v === "number" ? Math.round(v * 100) / 100 : v));
           }
 
-          commit(lookupGesture(features) ?? UNKNOWN);
+          const sample = pushSample(now, smoothI, vw, vh, rule ? rule.say : null, features);
+          const speed = updateSpeed();
+          updateMotion(now, sample, speed);
+          updateFlap(now, sample, speed);
+
+          commit(rule ? rule.label : UNKNOWN, rule);
+          drawTrail(now);
+          drawHand(landmarks, features.ext);
+
+          const moving = motion.active || speed > CONFIG.hold.stillSpeed;
+          updateHold(now, moving, true);
+          setChip(handChip, true, "Hand found");
+          setChip(motionChip, moving, moving ? "Moving" : "Still");
         } else {
-          // Tolerate brief tracking dropouts before declaring the hand gone
           if (handLostSince === null) handLostSince = now;
           if (now - handLostSince > CONFIG.handLostGraceMs) {
+            if (motion.active) finishMotion();
             resetTracking();
             lastLoggedKey = "";
-            commit(NOHAND, true);
+            suppressUntil = 0;
+            commit(NOHAND, null, true);
+            updateHold(now, false, false);
+            setChip(handChip, false, "No hand");
+            setChip(motionChip, false, "Still");
           }
         }
         canvasCtx.restore();
@@ -426,6 +1350,7 @@
       requestAnimationFrame(predictWebcam);
     }
 
+    renderSentence();
     initializeHandTracker();
   </script>
 </body>

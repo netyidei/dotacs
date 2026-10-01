@@ -1,57 +1,140 @@
 {
   "*": [
-    { "when": { "shape": "curved", "touch": "index" }, "label": "O" },
-    { "when": { "shape": "curved", "thumbPos": ["side", "out"] }, "label": "C" },
-    { "when": { "hookIndex": true }, "label": "X" }
+    { "when": { "shape": "curved", "touch": "index" }, "label": "O", "say": "O", "kind": "letter", "hint": "Fingers curved, thumb touching index tip" },
+    { "when": { "shape": "curved", "thumbPos": ["side", "out"] }, "label": "C", "say": "C", "kind": "letter", "hint": "Curved hand, as if holding a cup" },
+    { "when": { "hookIndex": true }, "label": "X", "say": "X", "kind": "letter", "hint": "Fist with the index finger hooked" }
   ],
 
-  "[1, 1, 1, 1, 1]": "Hello / Paper / 5",
+  "[1, 1, 1, 1, 1]": { "label": "Paper / 5", "say": "5", "kind": "number", "hint": "Open hand, fingers spread" },
 
-  "[0, 0, 0, 0, 0]": "Rock / Fist / S",
+  "[0, 0, 0, 0, 0]": { "label": "Rock / Fist / S", "say": "S", "kind": "letter", "hint": "Closed fist, thumb across the fingers" },
 
   "[1, 0, 0, 0, 0]": [
-    { "when": { "thumbPos": "out", "thumbDir": "up" }, "label": "Thumbs Up / Good" },
-    { "when": { "thumbPos": "out", "thumbDir": "down" }, "label": "Thumbs Down / Bad" },
-    { "when": { "thumbPos": "side" }, "label": "A" }
+    { "when": { "thumbPos": "out", "thumbDir": "up" }, "label": "Thumbs Up / Good", "say": "Good", "kind": "word", "hint": "Thumb up" },
+    { "when": { "thumbPos": "out", "thumbDir": "down" }, "label": "Thumbs Down / Bad", "say": "Bad", "kind": "word", "hint": "Thumb down" },
+    { "when": { "thumbPos": "side" }, "label": "A", "say": "A", "kind": "letter", "hint": "Fist with the thumb alongside" }
   ],
 
   "[0, 1, 0, 0, 0]": [
-    { "when": { "touch": "middle" }, "label": "D" },
-    "Number 1"
+    { "when": { "touch": "middle" }, "label": "D", "say": "D", "kind": "letter", "hint": "Index up, thumb touching the middle finger" },
+    { "label": "Number 1", "say": "1", "kind": "number", "hint": "Index finger up" }
   ],
 
   "[1, 1, 0, 0, 0]": [
-    { "when": { "touch": "middle" }, "label": "D" },
-    { "when": { "indexDir": "up", "thumbDir": "side" }, "label": "L" },
-    { "when": { "indexDir": "side" }, "label": "G" },
-    { "when": { "indexDir": "up" }, "label": "Number 1" }
+    { "when": { "touch": "middle" }, "label": "D", "say": "D", "kind": "letter", "hint": "Index up, thumb touching the middle finger" },
+    { "when": { "indexDir": "up", "thumbDir": "side" }, "label": "L", "say": "L", "kind": "letter", "hint": "Index up, thumb out to the side" },
+    { "when": { "indexDir": "side" }, "label": "G", "say": "G", "kind": "letter", "hint": "Index and thumb pointing sideways" },
+    { "when": { "indexDir": "up" }, "label": "Number 1", "say": "1", "kind": "number", "hint": "Index finger up" }
   ],
 
   "[0, 1, 1, 0, 0]": [
-    { "when": { "spread": "together", "indexDir": "side" }, "label": "H" },
-    { "when": { "spread": "together" }, "label": "U" },
-    "Peace / V / 2"
+    { "when": { "spread": "together", "indexDir": "side" }, "label": "H", "say": "H", "kind": "letter", "hint": "Index and middle together, pointing sideways" },
+    { "when": { "spread": "together" }, "label": "U", "say": "U", "kind": "letter", "hint": "Index and middle up, together" },
+    { "label": "Peace / V / 2", "say": "V", "kind": "letter", "hint": "Index and middle up, apart" }
   ],
 
   "[1, 1, 1, 0, 0]": [
-    { "when": { "spread": "apart", "thumbDir": "up" }, "label": "K" },
-    "Number 3"
+    { "when": { "spread": "apart", "thumbDir": "up" }, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them" },
+    { "label": "Number 3", "say": "3", "kind": "number", "hint": "Thumb, index and middle out" }
   ],
 
-  "[0, 1, 1, 1, 0]": "W",
+  "[0, 1, 1, 1, 0]": { "label": "W", "say": "W", "kind": "letter", "hint": "Three middle fingers up, thumb holds the pinky" },
 
   "[0, 1, 1, 1, 1]": [
-    { "when": { "spread": "apart" }, "label": "Number 4" },
-    "B"
+    { "when": { "spread": "apart" }, "label": "Number 4", "say": "4", "kind": "number", "hint": "Four fingers up and apart, thumb folded" },
+    { "label": "B", "say": "B", "kind": "letter", "hint": "Flat hand, fingers together, thumb across the palm" }
   ],
 
   "[0, 0, 1, 1, 1]": [
-    { "when": { "touch": "index" }, "label": "F / OK" }
+    { "when": { "touch": "index" }, "label": "F / OK / 9", "say": "F", "kind": "letter", "hint": "Thumb touches index tip, other fingers up" }
   ],
 
-  "[0, 0, 0, 0, 1]": "I",
+  "[0, 1, 1, 0, 1]": [
+    { "when": { "touch": "ring" }, "label": "Number 7", "say": "7", "kind": "number", "hint": "Thumb touches the ring finger, others up" }
+  ],
 
-  "[1, 0, 0, 0, 1]": "Hang Loose / Y",
+  "[0, 1, 0, 1, 1]": [
+    { "when": { "touch": "middle" }, "label": "Number 8", "say": "8", "kind": "number", "hint": "Thumb touches the middle finger, others up" }
+  ],
 
-  "[1, 1, 0, 0, 1]": "I Love You"
+  "[0, 0, 0, 0, 1]": { "label": "I", "say": "I", "kind": "letter", "hint": "Fist with the pinky up" },
+
+  "[1, 0, 0, 0, 1]": { "label": "Hang Loose / Y", "say": "Y", "kind": "letter", "hint": "Thumb and pinky out" },
+
+  "[1, 1, 0, 0, 1]": { "label": "I Love You", "say": "I love you", "kind": "word", "hint": "Thumb, index and pinky out" },
+
+  "[0, 1, 0, 0, 1]": { "label": "Rock On", "say": "Rock on", "kind": "word", "hint": "Index and pinky up, thumb across" },
+
+  "motions": [
+    {
+      "label": "J", "say": "J", "kind": "letter",
+      "track": "pinky",
+      "when": { "hand": ["I"] },
+      "path": [[0.7, 0.0], [0.7, 0.6], [0.62, 0.85], [0.4, 1.0], [0.15, 0.9], [0.05, 0.7]],
+      "hint": "Pinky up (I), draw a J in the air"
+    },
+    {
+      "label": "Z", "say": "Z", "kind": "letter",
+      "track": "index",
+      "when": { "hand": ["1", "D", "G", "L"] },
+      "path": [[0, 0], [1, 0], [0, 1], [1, 1]],
+      "hint": "Index finger, draw a Z in the air"
+    },
+
+    { "label": "Hello", "say": "Hello", "kind": "word",
+      "when": { "motion": "waveX", "hand": ["5", "B", "4"] },
+      "hint": "Open hand, wave side to side" },
+
+    { "label": "Bye", "say": "Bye", "kind": "word",
+      "when": { "flap": "all" },
+      "hint": "Open hand, fold and open the fingers twice" },
+
+    { "label": "Come", "say": "Come", "kind": "word",
+      "when": { "flap": "index" },
+      "hint": "Index finger curls toward you twice" },
+
+    { "label": "Yes", "say": "Yes", "kind": "word",
+      "when": { "motion": "shakeY", "hand": ["S", "A", "X"] },
+      "hint": "Fist nods up and down" },
+
+    { "label": "No", "say": "No", "kind": "word",
+      "when": { "motion": "waveX", "hand": ["1", "D"] },
+      "hint": "Index finger wags side to side" },
+
+    { "label": "Please", "say": "Please", "kind": "word",
+      "when": { "motion": "circle", "hand": ["B", "5", "4"] },
+      "hint": "Flat hand circles in front of your chest" },
+
+    { "label": "Sorry", "say": "Sorry", "kind": "word",
+      "when": { "motion": "circle", "hand": ["S", "A", "X"] },
+      "hint": "Fist circles in front of your chest" },
+
+    { "label": "Thank you", "say": "Thank you", "kind": "word",
+      "when": { "motion": "swipeDown", "hand": ["B", "5", "4"] },
+      "hint": "Flat hand sweeps down and out from your chin" },
+
+    { "label": "Water", "say": "Water", "kind": "word",
+      "when": { "motion": "shakeY", "hand": ["W"] },
+      "hint": "W hand taps down twice" },
+
+    { "label": "Eat", "say": "Eat", "kind": "word",
+      "when": { "motion": "shakeY", "hand": ["O", "F", "C"] },
+      "hint": "Fingertips together, tap toward your mouth twice" },
+
+    { "label": "Drink", "say": "Drink", "kind": "word",
+      "when": { "motion": "swipeUp", "hand": ["C"] },
+      "hint": "C hand lifts up as if holding a cup" },
+
+    { "label": "Hungry", "say": "Hungry", "kind": "word",
+      "when": { "motion": "swipeDown", "hand": ["C"] },
+      "hint": "C hand slides down your chest" },
+
+    { "label": "Who", "say": "Who", "kind": "word",
+      "when": { "motion": "circle", "hand": ["1", "D"] },
+      "hint": "Index finger circles" },
+
+    { "label": "Call me", "say": "Call me", "kind": "word",
+      "when": { "motion": ["waveX", "shakeY"], "hand": ["Y"] },
+      "hint": "Y hand, shake it like a phone" }
+  ]
 }
