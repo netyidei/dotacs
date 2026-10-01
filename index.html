@@ -2,29 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>MediaPipe Hand Tracker Web</title>
+  <title>MediaPipe Sign Tracker</title>
   <style>
     body {
       margin: 0;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
       background-color: #1a1a1a;
+      font-family: sans-serif;
     }
     .video-container {
       position: relative;
       width: 640px;
       height: 480px;
+      border: 4px solid #333;
+      border-radius: 8px;
+      overflow: hidden;
     }
-    /* Mirror the feed horizontally for a natural selfie-view */
     video, canvas {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      transform: scaleX(-1); 
+      transform: scaleX(-1); /* Mirror effect */
+    }
+    #text-output {
+      margin-top: 20px;
+      padding: 15px 30px;
+      background-color: #333;
+      color: #00FF00;
+      font-size: 2rem;
+      border-radius: 8px;
+      min-width: 300px;
+      text-align: center;
     }
   </style>
 </head>
@@ -34,35 +48,51 @@
     <video id="webcam" autoplay playsinline></video>
     <canvas id="output_canvas" width="640" height="480"></canvas>
   </div>
+  
+  <div id="text-output">Loading model...</div>
 
   <script type="module">
     import {
-        HandLandmarker,
-        FilesetResolver,
-        DrawingUtils
+      HandLandmarker,
+      FilesetResolver,
+      DrawingUtils
     } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
 
     const video = document.getElementById("webcam");
     const canvasElement = document.getElementById("output_canvas");
     const canvasCtx = canvasElement.getContext("2d");
+    const textOutput = document.getElementById("text-output");
     
     let handLandmarker;
     let lastVideoTime = -1;
+    let gestureDictionary = {};
 
-    // 1. Initialize the HandLandmarker model
+    // Load the JSON mappings
+    async function loadGestures() {
+      try {
+        const response = await fetch('gestures.json');
+        gestureDictionary = await response.json();
+      } catch (err) {
+        console.error("Could not load gestures.json", err);
+        textOutput.innerText = "Error loading JSON";
+      }
+    }
+
+    // Initialize the HandLandmarker model
     async function initializeHandTracker() {
+      await loadGestures();
+      
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
       );
       
       handLandmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
-          // Uses the exact same model file as your Python script
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
           delegate: "GPU"
         },
         runningMode: "VIDEO",
-        numHands: 2,
+        numHands: 1, 
         minHandDetectionConfidence: 0.5,
         minHandPresenceConfidence: 0.5,
         minTrackingConfidence: 0.5
@@ -71,52 +101,84 @@
       startWebcam();
     }
 
-    // 2. Request webcam access and start the video feed
     async function startWebcam() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
         video.addEventListener("loadeddata", predictWebcam);
+        textOutput.innerText = "Show a gesture";
       } catch (err) {
-        console.error("Webcam access denied or unavailable.", err);
+        textOutput.innerText = "Camera access denied";
       }
     }
 
-    // 3. The detection and drawing loop
+    // Helper function to calculate distance between two landmarks
+    function getDistance(p1, p2) {
+      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
+    // Distance-based logic to determine if fingers are extended (rotation-invariant)
+    function getFingerStates(landmarks) {
+      const wrist = landmarks[0];
+      
+      // For the 4 main fingers: check if the tip is further from the wrist than the middle joint (PIP)
+      const isExtended = (tip, pip) => {
+        return getDistance(wrist, landmarks[tip]) > getDistance(wrist, landmarks[pip]) ? 1 : 0;
+      };
+
+      const index = isExtended(8, 6);
+      const middle = isExtended(12, 10);
+      const ring = isExtended(16, 14);
+      const pinky = isExtended(20, 18);
+      
+      // Thumb logic: Measure if thumb tip is further from the pinky base than the thumb knuckle is
+      const pinkyBase = landmarks[17];
+      const thumb = getDistance(pinkyBase, landmarks[4]) > getDistance(pinkyBase, landmarks[3]) ? 1 : 0;
+
+      // Manually format the string to match gestures.json exactly
+      return `[${thumb}, ${index}, ${middle}, ${ring}, ${pinky}]`;
+    }
+
     async function predictWebcam() {
-      // Ensure the video is playing and a new frame is ready
       if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         
-        // Detect hands in the current video frame
         const results = handLandmarker.detectForVideo(video, performance.now());
         
-        // Clear the canvas for the new frame
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         
-        // Draw landmarks if hands are detected
-        if (results.landmarks) {
+        if (results.landmarks && results.landmarks.length > 0) {
+          const landmarks = results.landmarks[0];
+          
+          // Draw the hand
           const drawingUtils = new DrawingUtils(canvasCtx);
-          for (const landmarks of results.landmarks) {
-            // Draw connections (bones)
-            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
-              color: "#00FF00", lineWidth: 2
-            });
-            // Draw joints
-            drawingUtils.drawLandmarks(landmarks, {
-              color: "#FF0000", lineWidth: 2, radius: 4
-            });
+          drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 2 });
+          drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 2, radius: 3 });
+
+          // Calculate finger states and look up in JSON
+          const currentStateStr = getFingerStates(landmarks);
+          
+          // Log the array to the browser console so you can easily map new gestures
+          console.log(currentStateStr); 
+          
+          if (gestureDictionary[currentStateStr]) {
+            textOutput.innerText = gestureDictionary[currentStateStr];
+            textOutput.style.color = "#00FF00";
+          } else {
+            textOutput.innerText = "Unknown Gesture";
+            textOutput.style.color = "#FF8800"; 
           }
+        } else {
+            textOutput.innerText = "No hand detected";
+            textOutput.style.color = "#666";
         }
         canvasCtx.restore();
       }
       
-      // Loop continuously
       requestAnimationFrame(predictWebcam);
     }
 
-    // Start the application
     initializeHandTracker();
   </script>
 </body>
