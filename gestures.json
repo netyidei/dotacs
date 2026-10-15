@@ -136,5 +136,51 @@
     { "label": "Call me", "say": "Call me", "kind": "word",
       "when": { "motion": ["waveX", "shakeY"], "hand": ["Y"] },
       "hint": "Y hand, shake it like a phone" }
+  ],
+
+  "pairs": [
+    { "label": "6-7", "say": "67", "kind": "word",
+      "when": { "pairMotion": "alternate" },
+      "hint": "Two hands out, palms up: one rises while the other drops, back and forth" },
+
+    { "label": "Clap", "say": "Clap", "kind": "word",
+      "when": { "pairMotion": "clap" },
+      "hint": "Bring both hands together and apart twice" },
+
+    { "label": "Big", "say": "Big", "kind": "word",
+      "when": { "pairMotion": "apart", "left": ["L"], "right": ["L"] },
+      "hint": "Two L hands, pull them apart" },
+
+    { "label": "Book", "say": "Book", "kind": "word",
+      "when": { "pairMotion": "apart", "left": ["B", "5"], "right": ["B", "5"] },
+      "hint": "Two flat hands touching, open them like a book" },
+
+    { "label": "Small", "say": "Small", "kind": "word",
+      "when": { "pairMotion": "together", "left": ["B", "5"], "right": ["B", "5"] },
+      "hint": "Two flat hands, bring them closer together" },
+
+    { "label": "Pray", "say": "Pray", "kind": "word",
+      "when": { "left": ["B", "5"], "right": ["B", "5"], "gap": "overlap" },
+      "hint": "Palms pressed together, fingers up" },
+
+    { "label": "More", "say": "More", "kind": "word",
+      "when": { "left": ["O", "F", "C"], "right": ["O", "F", "C"], "gap": ["near", "overlap"] },
+      "hint": "Both hands in an O, fingertips together" },
+
+    { "label": "Love", "say": "Love", "kind": "word",
+      "when": { "left": ["S", "A"], "right": ["S", "A"], "gap": ["near", "overlap"] },
+      "hint": "Two fists crossed over your chest" },
+
+    { "label": "Help", "say": "Help", "kind": "word",
+      "when": { "left": ["S", "A"], "right": ["B", "5"], "gap": ["near", "overlap"] },
+      "hint": "Fist resting on a flat palm" },
+
+    { "label": "Friend", "say": "Friend", "kind": "word",
+      "when": { "left": ["X"], "right": ["X"], "gap": ["near", "overlap"] },
+      "hint": "Both index fingers hooked together" },
+
+    { "label": "Play", "say": "Play", "kind": "word",
+      "when": { "left": ["Y"], "right": ["Y"], "gap": ["near", "far"] },
+      "hint": "Both hands in a Y (thumb and pinky out)" }
   ]
 }

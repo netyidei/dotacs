@@ -281,7 +281,14 @@
     .tile .glyph.word { font-size: 0.98rem; text-align: left; min-width: 0; color: var(--ink); }
     .tile .how { font-size: 0.8rem; line-height: 1.25; color: var(--muted); }
     .tile.motion { border-left: 4px solid var(--marigold); }
+    .tile.pair { border-left: 4px solid var(--cobalt); }
     .tile.live { background: var(--cobalt-soft); border-color: var(--cobalt); }
+    .legend { padding: 0 20px 12px; font-size: 0.82rem; color: var(--muted); display: flex; gap: 16px; }
+    .legend span::before {
+      content: ""; display: inline-block; width: 4px; height: 12px; margin-right: 6px; vertical-align: -2px; border-radius: 2px;
+    }
+    .legend .l-motion::before { background: var(--marigold); }
+    .legend .l-pair::before { background: var(--cobalt); }
 
     @media (max-width: 980px) {
       .layout { grid-template-columns: minmax(0, 1fr); padding: 16px 16px 32px; }
@@ -345,6 +352,10 @@
             <button role="tab" data-tab="words" aria-selected="false">Words</button>
           </div>
         </div>
+        <div class="legend" id="legend" hidden>
+          <span class="l-motion">Motion</span>
+          <span class="l-pair">Two hands</span>
+        </div>
         <div id="guide-body"></div>
       </div>
     </section>
@@ -392,6 +403,11 @@
       spreadApart: 1.5,
       curvedAvg: { min: 0.15, max: 0.70 },
 
+      // which hand types letters and one-hand words when both hands are in view
+      // (two-hand signs are checked first). "auto" = the hand that appeared first,
+      // "left" / "right" = the hand on that side of the screen as you see it.
+      leadHand: "auto",
+
       // adding signs to the sentence
       hold: {
         holdMs: 700,        // hold a still sign this long to add it
@@ -401,7 +417,7 @@
         afterMotionMs: 1500 // ignore held shapes right after a motion sign
       },
 
-      // motion (all distances are in palm lengths, so they work at any distance)
+      // one-hand motion (all distances are in palm lengths, so they work at any distance)
       motion: {
         startSpeed: 1.0,
         stopSpeed: 0.5,
@@ -419,7 +435,21 @@
       flap: { windowMs: 1600, minCloses: 2, high: 0.65, low: 0.35, maxSpeed: 0.8, cooldownMs: 1500 },
 
       // path templates (J, Z)
-      template: { points: 32, maxDist: 0.22 }
+      template: { points: 32, maxDist: 0.22 },
+
+      // two-hand motion
+      pair: {
+        windowMs: 1500,
+        altRange: 0.5,      // each hand must travel at least this far vertically (6-7)
+        altAmp: 0.25,       // smallest up/down stroke that counts (6-7)
+        altCorr: -0.35,     // how opposite the two hands' vertical motion must be (-1 = perfectly)
+        clapAmp: 0.5,       // smallest in/out stroke of the gap between hands (clap)
+        clapRange: 1.0,
+        moveDelta: 1.0,     // gap change for "apart" / "together"
+        cooldownMs: 1800,
+        gapOverlap: 0.7,    // palm distance (in palm lengths) below this = hands overlap
+        gapNear: 1.8        // ...below this = near, otherwise far
+      }
     };
 
     const UNKNOWN = "Unknown Gesture";
@@ -440,6 +470,8 @@
     // ------------------------------------------------------------------
     // Loading
     // ------------------------------------------------------------------
+    const RESERVED = new Set(["motions", "pairs"]);
+
     function normRule(r) {
       if (typeof r === "string") r = { label: r };
       const say = r.say ?? r.label;
@@ -449,12 +481,14 @@
 
     function normalizeDictionary(dict) {
       const motions = (dict.motions || []).map(normRule);
+      const pairs = (dict.pairs || []).map(normRule);
       for (const key of Object.keys(dict)) {
-        if (key === "motions") continue;
+        if (RESERVED.has(key)) continue;
         const v = dict[key];
         dict[key] = (Array.isArray(v) ? v : [v]).map(normRule);
       }
       dict.motions = motions;
+      dict.pairs = pairs;
       return dict;
     }
 
@@ -487,7 +521,7 @@
           delegate
         },
         runningMode: "VIDEO",
-        numHands: 1,
+        numHands: 2,
         minHandDetectionConfidence: 0.6,
         minHandPresenceConfidence: 0.6,
         minTrackingConfidence: 0.6
@@ -548,13 +582,6 @@
       return "side";
     }
 
-    // ------------------------------------------------------------------
-    // Temporal smoothing + hysteresis
-    // ------------------------------------------------------------------
-    let smoothW = null;
-    let smoothI = null;
-    let hystState = {};
-
     function ema(prev, cur, a) {
       if (!prev) return cur.map(p => ({ x: p.x, y: p.y, z: p.z || 0 }));
       return cur.map((p, i) => ({
@@ -564,11 +591,40 @@
       }));
     }
 
-    function hyst(name, value, low, high) {
-      if (value > high) hystState[name] = true;
-      else if (value < low) hystState[name] = false;
-      return !!hystState[name];
+    function hyst(state, name, value, low, high) {
+      if (value > high) state[name] = true;
+      else if (value < low) state[name] = false;
+      return !!state[name];
     }
+
+    const range = (a) => Math.max(...a) - Math.min(...a);
+    const mean = (a) => a.reduce((s, v) => s + v, 0) / (a.length || 1);
+
+    function correlation(a, b) {
+      const ma = mean(a), mb = mean(b);
+      let num = 0, da = 0, db = 0;
+      for (let i = 0; i < a.length; i++) {
+        const x = a[i] - ma, y = b[i] - mb;
+        num += x * y; da += x * x; db += y * y;
+      }
+      return num / (Math.sqrt(da * db) || 1e-9);
+    }
+
+    // ------------------------------------------------------------------
+    // Per-hand state. There are two slots; a detected hand keeps its slot by
+    // staying closest to where that slot's hand was last seen.
+    // ------------------------------------------------------------------
+    function newHand(id) {
+      return {
+        id, active: false, present: false, lostSince: null, appearedAt: 0, lastPalm: null,
+        smoothW: null, smoothI: null, hyst: {},
+        buffer: [], scaleEma: 0, speedEma: 0, speed: 0, lastMovingAt: 0,
+        motion: { active: false, samples: [], stillSince: null, startCount: 0 },
+        fingerHist: [], flapCooldownUntil: 0,
+        landmarks: null, features: null, rule: null, sample: null
+      };
+    }
+    const hands = [newHand(0), newHand(1)];
 
     // ------------------------------------------------------------------
     // Static hand-shape features
@@ -581,7 +637,7 @@
     };
     const TIPS = { index: 8, middle: 12, ring: 16, pinky: 20 };
 
-    function extractFeatures(W, I, vw, vh) {
+    function extractFeatures(h, W, I, vw, vh) {
       const palm = d3(W[0], W[9]) || 1e-6;
 
       const score = {};
@@ -600,12 +656,12 @@
 
       const ext = {};
       for (const name of Object.keys(FINGERS)) {
-        ext[name] = hyst("f_" + name, score[name], CONFIG.fingerOff, CONFIG.fingerOn);
+        ext[name] = hyst(h.hyst, "f_" + name, score[name], CONFIG.fingerOff, CONFIG.fingerOn);
       }
       if (touch !== "none" && score[touch] < 0.8) ext[touch] = false;
 
       const acrossDist = Math.min(d3(W[4], W[10]), d3(W[4], W[13]), d3(W[4], W[14])) / palm;
-      const across = hyst("thumbAcross", -acrossDist, -CONFIG.thumbAcrossOff, -CONFIG.thumbAcrossOn);
+      const across = hyst(h.hyst, "thumbAcross", -acrossDist, -CONFIG.thumbAcrossOff, -CONFIG.thumbAcrossOn);
       const outRatio = d3(W[4], W[6]) / palm;
       const thumbPos = across ? "across" : (outRatio > CONFIG.thumbOut ? "out" : "side");
       ext.thumb = thumbPos !== "across";
@@ -656,6 +712,52 @@
         for (const r of rulesOf(k)) if (r.when && matches(r.when, f)) return r;
       }
       for (const r of rulesOf(f.key)) if (!r.when) return r;
+      return null;
+    }
+
+    // ------------------------------------------------------------------
+    // Two-hand features and lookup
+    // ------------------------------------------------------------------
+    // "left" / "right" are the two hands as you see them on screen (mirrored view),
+    // so "left" is your left hand when your arms are not crossed.
+    function pairFeatures(h0, h1, pairMotion = "none", sayA = null, sayB = null) {
+      const a = h0.sample, b = h1.sample;
+      sayA = sayA ?? (h0.rule ? h0.rule.say : null);
+      sayB = sayB ?? (h1.rule ? h1.rule.say : null);
+      const aIsLeft = a.palm.x <= b.palm.x;
+      const left = aIsLeft ? sayA : sayB;
+      const right = aIsLeft ? sayB : sayA;
+      const S = (a.scale + b.scale) / 2 || 1;
+      const d = Math.hypot(a.palm.x - b.palm.x, a.palm.y - b.palm.y) / S;
+      const P = CONFIG.pair;
+      const gap = d < P.gapOverlap ? "overlap" : d < P.gapNear ? "near" : "far";
+      const dy = (a.palm.y - b.palm.y) / S;           // negative: hand A is higher
+      let above = "level";
+      if (dy < -0.5) above = aIsLeft ? "left" : "right";
+      else if (dy > 0.5) above = aIsLeft ? "right" : "left";
+      return { left, right, gap, above, pairMotion };
+    }
+
+    function matchesPair(rule, pf) {
+      const when = rule.when || {};
+      if (matches(when, pf)) return true;
+      if (rule.sym === false) return false;
+      const swapped = { ...pf, left: pf.right, right: pf.left,
+        above: pf.above === "left" ? "right" : pf.above === "right" ? "left" : "level" };
+      return matches(when, swapped);
+    }
+
+    function lookupPairStatic(pf) {
+      for (const r of gestureDictionary.pairs) {
+        if (r.when && !r.when.pairMotion && matchesPair(r, pf)) return r;
+      }
+      return null;
+    }
+
+    function lookupPairMotion(pf) {
+      for (const r of gestureDictionary.pairs) {
+        if (r.when && r.when.pairMotion && matchesPair(r, pf)) return r;
+      }
       return null;
     }
 
@@ -774,22 +876,24 @@
     function buildGuide() {
       const seen = new Set();
       const items = [];
-      const push = (r, how) => {
-        const id = how + ":" + r.say;
+      const push = (r, how, pair = false) => {
+        const id = (pair ? "pair:" : "") + how + ":" + r.say;
         if (seen.has(id)) return;
         seen.add(id);
-        items.push({ say: r.say, kind: r.kind, hint: r.hint || r.label, how });
+        items.push({ say: r.say, kind: r.kind, hint: r.hint || r.label, how, pair });
       };
       for (const [k, list] of Object.entries(gestureDictionary)) {
-        if (k !== "motions") list.forEach(r => push(r, "hold"));
+        if (!RESERVED.has(k)) list.forEach(r => push(r, "hold"));
       }
       gestureDictionary.motions.forEach(r => push(r, "motion"));
+      gestureDictionary.pairs.forEach(r => push(r, r.when && r.when.pairMotion ? "motion" : "hold", true));
       guideItems = items;
       renderGuide();
     }
 
     function renderGuide() {
       guideBody.textContent = "";
+      $("legend").hidden = guideTab !== "words";
       const list = guideItems.filter(i => guideTab === "letters" ? i.kind !== "word" : i.kind === "word");
       if (guideTab === "letters") {
         list.sort((a, b) => (a.kind === b.kind
@@ -798,7 +902,8 @@
       }
       for (const item of list) {
         const tile = document.createElement("div");
-        tile.className = "tile" + (item.how === "motion" ? " motion" : "");
+        tile.className = "tile" + (item.pair ? " pair" : item.how === "motion" ? " motion" : "");
+        if (item.how === "motion") tile.dataset.motion = "1";
         tile.dataset.say = item.say;
         const glyph = document.createElement("span");
         glyph.className = "glyph" + (item.kind === "word" ? " word" : "");
@@ -823,7 +928,7 @@
       guideBody.querySelectorAll(".tile.live").forEach(el => el.classList.remove("live"));
       if (!say) return;
       guideBody.querySelectorAll(".tile").forEach(el => {
-        if (el.dataset.say === say && !el.classList.contains("motion")) el.classList.add("live");
+        if (el.dataset.say === say && !el.dataset.motion) el.classList.add("live");
       });
     }
 
@@ -885,7 +990,7 @@
         hold.committed = false;
       } else if (now < suppressUntil) {
         hold.since = now; hold.committed = false;
-        hint = "Motion sign recognised. Lower your hand to continue.";
+        hint = "Motion sign recognised. Lower your hands to continue.";
       } else if (moving) {
         hold.since = now; hold.committed = false;
         hint = "Moving";
@@ -915,15 +1020,9 @@
     }
 
     // ------------------------------------------------------------------
-    // Motion tracking
+    // One-hand motion tracking (runs for each hand)
     // ------------------------------------------------------------------
     const M = CONFIG.motion;
-    const buffer = [];            // recent samples (about 3.5 s)
-    let scaleEma = 0;
-    let speedEma = 0;
-    const motion = { active: false, samples: [], stillSince: null, startCount: 0 };
-    const fingerHist = [];
-    let flapCooldownUntil = 0;
     let lastEvent = { label: null, t: 0 };
 
     const palmCenter = (I) => {
@@ -931,10 +1030,10 @@
       return { x: ids.reduce((a, i) => a + I[i].x, 0) / 5, y: ids.reduce((a, i) => a + I[i].y, 0) / 5 };
     };
 
-    function pushSample(now, I, vw, vh, say, features) {
+    function pushSample(h, now, I, vw, vh, say, features) {
       const pc = palmCenter(I);
       const scalePx = Math.hypot((I[0].x - I[9].x) * vw, (I[0].y - I[9].y) * vh) || 1;
-      scaleEma = scaleEma ? scaleEma + 0.1 * (scalePx - scaleEma) : scalePx;
+      h.scaleEma = h.scaleEma ? h.scaleEma + 0.1 * (scalePx - h.scaleEma) : scalePx;
 
       // the fingertip that is "writing" (for J and Z), used for the trail too
       const tipId = (features.ext.pinky && !features.ext.index) ? 20 : features.ext.index ? 8 : null;
@@ -942,7 +1041,7 @@
       const sc = features._scores;
       const sample = {
         t: now,
-        scale: scaleEma,
+        scale: h.scaleEma,
         // display coordinates (mirrored so "right" is the user's right on screen)
         palm:  { x: (1 - pc.x) * vw, y: pc.y * vh },
         index: { x: (1 - I[8].x) * vw, y: I[8].y * vh },
@@ -951,67 +1050,73 @@
         say,
         fingers: [sc.index, sc.middle, sc.ring, sc.pinky]
       };
-      buffer.push(sample);
-      while (buffer.length && now - buffer[0].t > 3500) buffer.shift();
+      h.buffer.push(sample);
+      while (h.buffer.length && now - h.buffer[0].t > 3500) h.buffer.shift();
       return sample;
     }
 
-    function updateSpeed() {
-      const n = buffer.length;
-      if (n < 2) return speedEma;
-      const cur = buffer[n - 1];
-      let ref = buffer[0];
+    function updateSpeed(h) {
+      const buf = h.buffer;
+      const n = buf.length;
+      if (n < 2) return h.speedEma;
+      const cur = buf[n - 1];
+      let ref = buf[0];
       for (let i = n - 2; i >= 0; i--) {
-        ref = buffer[i];
-        if (cur.t - buffer[i].t >= 100) break;
+        ref = buf[i];
+        if (cur.t - buf[i].t >= 100) break;
       }
       const dt = (cur.t - ref.t) / 1000;
       const raw = dt < 0.03 ? 0 : Math.hypot(cur.palm.x - ref.palm.x, cur.palm.y - ref.palm.y) / cur.scale / dt;
-      speedEma += 0.5 * (raw - speedEma);
-      return speedEma;
+      h.speedEma += 0.5 * (raw - h.speedEma);
+      return h.speedEma;
     }
 
-    function updateMotion(now, sample, speed) {
-      if (!motion.active) {
-        motion.startCount = speed > M.startSpeed ? motion.startCount + 1 : 0;
-        if (motion.startCount >= 2) {
-          motion.active = true;
-          motion.stillSince = null;
-          motion.samples = buffer.filter(s => s.t >= now - 250);
+    function resetMotion(h) {
+      h.motion.active = false;
+      h.motion.samples = [];
+      h.motion.stillSince = null;
+      h.motion.startCount = 0;
+    }
+
+    function updateMotion(h, now, sample, speed) {
+      const m = h.motion;
+      if (!m.active) {
+        m.startCount = speed > M.startSpeed ? m.startCount + 1 : 0;
+        if (m.startCount >= 2) {
+          m.active = true;
+          m.stillSince = null;
+          m.samples = h.buffer.filter(s => s.t >= now - 250);
         }
         return;
       }
-      motion.samples.push(sample);
+      m.samples.push(sample);
       if (speed < M.stopSpeed) {
-        if (motion.stillSince === null) motion.stillSince = now;
-        else if (now - motion.stillSince > M.stopMs) finishMotion();
+        if (m.stillSince === null) m.stillSince = now;
+        else if (now - m.stillSince > M.stopMs) finishMotion(h);
       } else {
-        motion.stillSince = null;
+        m.stillSince = null;
       }
-      if (motion.active && now - motion.samples[0].t > M.maxMs) finishMotion();
+      if (m.active && now - m.samples[0].t > M.maxMs) finishMotion(h);
     }
 
-    function resetMotion() {
-      motion.active = false;
-      motion.samples = [];
-      motion.stillSince = null;
-      motion.startCount = 0;
-    }
-
-    function finishMotion() {
-      if (!motion.samples.length) { resetMotion(); return; }
-      const endT = motion.stillSince ?? motion.samples[motion.samples.length - 1].t;
-      const segment = motion.samples.filter(s => s.t <= endT);
-      resetMotion();
+    function finishMotion(h) {
+      const m = h.motion;
+      if (!m.samples.length) { resetMotion(h); return; }
+      const endT = m.stillSince ?? m.samples[m.samples.length - 1].t;
+      const segment = m.samples.filter(s => s.t <= endT);
+      resetMotion(h);
       const mf = analyzeMotion(segment);
       if (!mf) return;
       const rule = findMotionRule(mf, segment);
-      if (DEBUG) console.log("motion", JSON.stringify(mf), "->", rule ? rule.label : "no match");
-      if (rule) emitRule(rule);
+      if (DEBUG) console.log("hand", h.id, "motion", JSON.stringify(mf), "->", rule ? rule.label : "no match");
+      if (rule) emitRule(rule, h);
     }
 
-    function emitRule(rule) {
+    // Fires a recognised motion sign. A one-hand sign is dropped if the other hand has
+    // been moving too (that is the two-hand motion detector's job).
+    function emitRule(rule, h = null) {
       const now = performance.now();
+      if (h && hands.some(o => o !== h && o.active && now - o.lastMovingAt < 500)) return;
       if (rule.label === lastEvent.label && now - lastEvent.t < M.repeatBlockMs) { lastEvent.t = now; return; }
       lastEvent = { label: rule.label, t: now };
       suppressUntil = now + CONFIG.hold.afterMotionMs;
@@ -1056,6 +1161,12 @@
       return { turn: total, radius: r / pts.length };
     }
 
+    function modeOf(samples, key) {
+      const tally = {};
+      for (const s of samples) if (s[key]) tally[s[key]] = (tally[s[key]] || 0) + 1;
+      return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    }
+
     function analyzeMotion(samples) {
       if (samples.length < 6) return null;
       const dur = samples[samples.length - 1].t - samples[0].t;
@@ -1066,8 +1177,8 @@
       const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
       let L = 0;
       for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-      const rangeX = Math.max(...xs) - Math.min(...xs);
-      const rangeY = Math.max(...ys) - Math.min(...ys);
+      const rangeX = range(xs);
+      const rangeY = range(ys);
       const dx = pts[pts.length - 1].x - pts[0].x;
       const dy = pts[pts.length - 1].y - pts[0].y;
       const net = Math.hypot(dx, dy);
@@ -1087,11 +1198,7 @@
         }
       }
 
-      const tally = {};
-      for (const s of samples) if (s.say) tally[s.say] = (tally[s.say] || 0) + 1;
-      const hand = Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
-      return { motion: kind, spin, hand, flap: "none", path: +L.toFixed(2), swingsX, swingsY };
+      return { motion: kind, spin, hand: modeOf(samples, "say"), flap: "none", path: +L.toFixed(2), swingsX, swingsY };
     }
 
     // ----- path templates (J, Z): resample, normalise, compare -----
@@ -1125,11 +1232,9 @@
     function normalizePath(raw) {
       const r = resample(raw, CONFIG.template.points);
       if (!r) return null;
-      const cx = r.reduce((a, p) => a + p.x, 0) / r.length;
-      const cy = r.reduce((a, p) => a + p.y, 0) / r.length;
-      const w = Math.max(...r.map(p => p.x)) - Math.min(...r.map(p => p.x));
-      const h = Math.max(...r.map(p => p.y)) - Math.min(...r.map(p => p.y));
-      const s = Math.max(w, h) || 1;
+      const cx = mean(r.map(p => p.x));
+      const cy = mean(r.map(p => p.y));
+      const s = Math.max(range(r.map(p => p.x)), range(r.map(p => p.y))) || 1;
       return r.map(p => ({ x: (p.x - cx) / s, y: (p.y - cy) / s }));
     }
 
@@ -1174,36 +1279,131 @@
       return closes;
     }
 
-    function updateFlap(now, sample, speed) {
+    function updateFlap(h, now, sample, speed) {
       const F = CONFIG.flap;
-      fingerHist.push({ t: now, s: sample.fingers });
-      while (fingerHist.length && now - fingerHist[0].t > F.windowMs) fingerHist.shift();
-      if (now < flapCooldownUntil || motion.active || speed > F.maxSpeed || fingerHist.length < 12) return;
+      h.fingerHist.push({ t: now, s: sample.fingers });
+      while (h.fingerHist.length && now - h.fingerHist[0].t > F.windowMs) h.fingerHist.shift();
+      if (now < h.flapCooldownUntil || h.motion.active || speed > F.maxSpeed || h.fingerHist.length < 12) return;
 
-      const closes = [0, 1, 2, 3].map(i => countCloses(fingerHist.map(h => h.s[i]), F.high, F.low));
+      const closes = [0, 1, 2, 3].map(i => countCloses(h.fingerHist.map(x => x.s[i]), F.high, F.low));
       const flapping = closes.map(c => c >= F.minCloses);
       let flap = null;
       if (flapping.every(Boolean)) flap = "all";
       else if (flapping[0] && closes[1] < 1 && closes[2] < 1 && closes[3] < 1) flap = "index";
       if (!flap) return;
 
-      fingerHist.length = 0;
-      flapCooldownUntil = now + F.cooldownMs;
+      h.fingerHist.length = 0;
+      h.flapCooldownUntil = now + F.cooldownMs;
       const mf = { motion: "none", spin: null, hand: null, flap };
       const rule = gestureDictionary.motions.find(r => !r.path && r.when && matches(r.when, mf));
-      if (DEBUG) console.log("flap", flap, "->", rule ? rule.label : "no match");
-      if (rule) emitRule(rule);
+      if (DEBUG) console.log("hand", h.id, "flap", flap, "->", rule ? rule.label : "no match");
+      if (rule) emitRule(rule, h);
     }
 
-    function resetTracking() {
-      smoothW = null;
-      smoothI = null;
-      hystState = {};
-      buffer.length = 0;
-      fingerHist.length = 0;
-      scaleEma = 0;
-      speedEma = 0;
-      resetMotion();
+    // ------------------------------------------------------------------
+    // Two-hand motion: 6-7 (alternating), clap, apart, together
+    // ------------------------------------------------------------------
+    const pair = { buf: [], cooldownUntil: 0 };
+
+    function updatePair(now, h0, h1) {
+      const P = CONFIG.pair;
+      const a = h0.sample, b = h1.sample;
+      const S = (a.scale + b.scale) / 2 || 1;
+      pair.buf.push({
+        t: now,
+        d: Math.hypot(a.palm.x - b.palm.x, a.palm.y - b.palm.y) / S,
+        yA: a.palm.y / S,
+        yB: b.palm.y / S,
+        sA: h0.rule ? h0.rule.say : null,
+        sB: h1.rule ? h1.rule.say : null
+      });
+      while (pair.buf.length && now - pair.buf[0].t > 2500) pair.buf.shift();
+      if (now < pair.cooldownUntil) return;
+
+      const win = pair.buf.filter(s => s.t >= now - P.windowMs);
+      if (win.length < 15) return;
+      const yA = win.map(s => s.yA), yB = win.map(s => s.yB), d = win.map(s => s.d);
+
+      let kind = null;
+      if (range(yA) >= P.altRange && range(yB) >= P.altRange &&
+          countSwings(yA, P.altAmp) >= 2 && countSwings(yB, P.altAmp) >= 2 &&
+          correlation(yA, yB) < P.altCorr) {
+        kind = "alternate";
+      } else if (countSwings(d, P.clapAmp) >= 2 && range(d) >= P.clapRange) {
+        kind = "clap";
+      } else {
+        const recent = win.filter(s => s.t >= now - 700);
+        if (recent.length >= 8) {
+          const rd = recent.map(s => s.d);
+          const delta = rd[rd.length - 1] - rd[0];
+          if (Math.abs(delta) >= P.moveDelta && countSwings(rd, 0.4) === 0) kind = delta > 0 ? "apart" : "together";
+        }
+      }
+      if (!kind) return;
+
+      const pf = pairFeatures(h0, h1, kind, modeOf(win, "sA"), modeOf(win, "sB"));
+      const rule = lookupPairMotion(pf);
+      if (DEBUG) console.log("pair", kind, JSON.stringify(pf), "->", rule ? rule.label : "no match");
+      if (rule) {
+        pair.cooldownUntil = now + P.cooldownMs;
+        pair.buf.length = 0;
+        emitRule(rule);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Hand slots
+    // ------------------------------------------------------------------
+    function assignHands(dets) {
+      const result = [], takenHands = new Set(), usedDets = new Set();
+      const cand = [];
+      dets.forEach((d, i) => hands.forEach(h => {
+        if (h.active && h.lastPalm) cand.push({ i, h, dist: Math.hypot(d.pc.x - h.lastPalm.x, d.pc.y - h.lastPalm.y) });
+      }));
+      cand.sort((a, b) => a.dist - b.dist);
+      for (const c of cand) {
+        if (usedDets.has(c.i) || takenHands.has(c.h)) continue;
+        usedDets.add(c.i); takenHands.add(c.h);
+        result.push({ h: c.h, det: dets[c.i] });
+      }
+      dets.forEach((d, i) => {
+        if (usedDets.has(i)) return;
+        const free = hands.find(h => !h.active && !takenHands.has(h));
+        if (free) { takenHands.add(free); result.push({ h: free, det: d }); }
+      });
+      return result;
+    }
+
+    function processHand(h, det, now, vw, vh) {
+      h.present = true;
+      h.lostSince = null;
+      h.landmarks = det.lm;
+      h.lastPalm = det.pc;
+      if (!h.active) { h.active = true; h.appearedAt = now; }
+
+      h.smoothW = ema(h.smoothW, det.world, CONFIG.smoothing);
+      h.smoothI = ema(h.smoothI, det.lm, CONFIG.smoothing);
+      h.features = extractFeatures(h, h.smoothW, h.smoothI, vw, vh);
+      h.rule = lookupGesture(h.features);
+      h.sample = pushSample(h, now, h.smoothI, vw, vh, h.rule ? h.rule.say : null, h.features);
+      h.speed = updateSpeed(h);
+      if (h.speed > CONFIG.hold.stillSpeed || h.motion.active) h.lastMovingAt = now;
+      updateMotion(h, now, h.sample, h.speed);
+      updateFlap(h, now, h.sample, h.speed);
+
+      if (DEBUG && now - lastDebugTime > 250) {
+        lastDebugTime = now;
+        console.log("hand", h.id, JSON.stringify(h.features, (k, v) =>
+          k === "_scores" ? undefined : typeof v === "number" ? Math.round(v * 100) / 100 : v));
+      }
+    }
+
+    function pickLead(act) {
+      if (act.length === 1) return act[0];
+      const mode = CONFIG.leadHand;
+      if (mode === "left") return act.reduce((a, b) => (a.sample.palm.x <= b.sample.palm.x ? a : b));
+      if (mode === "right") return act.reduce((a, b) => (a.sample.palm.x >= b.sample.palm.x ? a : b));
+      return act.reduce((a, b) => (a.appearedAt <= b.appearedAt ? a : b));
     }
 
     // ------------------------------------------------------------------
@@ -1247,25 +1447,40 @@
       });
     }
 
-    function drawTrail(now) {
-      const w = canvasElement.width, h = canvasElement.height;
+    function drawTrail(h, now) {
+      const w = canvasElement.width, ch = canvasElement.height;
       const span = 700;
+      const active = h.motion.active;
       canvasCtx.lineCap = "round";
-      for (let i = 1; i < buffer.length; i++) {
-        const a = buffer[i - 1], b = buffer[i];
+      for (let i = 1; i < h.buffer.length; i++) {
+        const a = h.buffer[i - 1], b = h.buffer[i];
         const age = now - b.t;
         if (age > span) continue;
         const alpha = 1 - age / span;
-        canvasCtx.strokeStyle = motion.active ? `rgba(255,255,255,${alpha})` : `rgba(143,160,255,${alpha * 0.8})`;
-        canvasCtx.shadowColor = motion.active ? "rgba(51,70,255,0.9)" : "transparent";
-        canvasCtx.shadowBlur = motion.active ? 12 : 0;
-        canvasCtx.lineWidth = (motion.active ? 3 : 2) + alpha * 4;
+        canvasCtx.strokeStyle = active ? `rgba(255,255,255,${alpha})` : `rgba(143,160,255,${alpha * 0.8})`;
+        canvasCtx.shadowColor = active ? "rgba(51,70,255,0.9)" : "transparent";
+        canvasCtx.shadowBlur = active ? 12 : 0;
+        canvasCtx.lineWidth = (active ? 3 : 2) + alpha * 4;
         canvasCtx.beginPath();
-        canvasCtx.moveTo(a.trail.x * w, a.trail.y * h);
-        canvasCtx.lineTo(b.trail.x * w, b.trail.y * h);
+        canvasCtx.moveTo(a.trail.x * w, a.trail.y * ch);
+        canvasCtx.lineTo(b.trail.x * w, b.trail.y * ch);
         canvasCtx.stroke();
       }
       canvasCtx.shadowBlur = 0;
+    }
+
+    // thin dashed link between the two palms while both hands are in view
+    function drawLink(h0, h1) {
+      const w = canvasElement.width, ch = canvasElement.height;
+      canvasCtx.save();
+      canvasCtx.setLineDash([6, 8]);
+      canvasCtx.strokeStyle = "rgba(255,255,255,0.35)";
+      canvasCtx.lineWidth = 2;
+      canvasCtx.beginPath();
+      canvasCtx.moveTo(h0.lastPalm.x * w, h0.lastPalm.y * ch);
+      canvasCtx.lineTo(h1.lastPalm.x * w, h1.lastPalm.y * ch);
+      canvasCtx.stroke();
+      canvasCtx.restore();
     }
 
     function setChip(chip, on, text) {
@@ -1282,68 +1497,74 @@
       return landmarks.map(p => ({ x: p.x * vw, y: p.y * vh, z: (p.z || 0) * vw }));
     }
 
-    let handLostSince = null;
-
     async function predictWebcam() {
       if (video.currentTime !== lastVideoTime && video.readyState >= 2) {
         lastVideoTime = video.currentTime;
 
         const now = performance.now();
         const results = handLandmarker.detectForVideo(video, now);
+        const vw = video.videoWidth || 640;
+        const vh = video.videoHeight || 480;
 
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-        if (results.landmarks && results.landmarks.length > 0) {
-          const landmarks = results.landmarks[0];
-          handLostSince = null;
+        // 1. match detections to the two hand slots and update each hand
+        hands.forEach(h => { h.present = false; });
+        const dets = (results.landmarks || []).map((lm, i) => ({
+          lm,
+          world: (results.worldLandmarks && results.worldLandmarks[i]) || toPseudoWorld(lm, vw, vh),
+          pc: palmCenter(lm)
+        }));
+        for (const { h, det } of assignHands(dets)) processHand(h, det, now, vw, vh);
 
-          const vw = video.videoWidth || 640;
-          const vh = video.videoHeight || 480;
-          const world = (results.worldLandmarks && results.worldLandmarks[0])
-            || toPseudoWorld(landmarks, vw, vh);
-          smoothW = ema(smoothW, world, CONFIG.smoothing);
-          smoothI = ema(smoothI, landmarks, CONFIG.smoothing);
-
-          const features = extractFeatures(smoothW, smoothI, vw, vh);
-          const rule = lookupGesture(features);
-
-          if (features.key !== lastLoggedKey) {
-            lastLoggedKey = features.key;
-            console.log(features.key);
-          }
-          if (DEBUG && now - lastDebugTime > 250) {
-            lastDebugTime = now;
-            console.log(JSON.stringify(features, (k, v) =>
-              typeof v === "number" ? Math.round(v * 100) / 100 : v));
-          }
-
-          const sample = pushSample(now, smoothI, vw, vh, rule ? rule.say : null, features);
-          const speed = updateSpeed();
-          updateMotion(now, sample, speed);
-          updateFlap(now, sample, speed);
-
-          commit(rule ? rule.label : UNKNOWN, rule);
-          drawTrail(now);
-          drawHand(landmarks, features.ext);
-
-          const moving = motion.active || speed > CONFIG.hold.stillSpeed;
-          updateHold(now, moving, true);
-          setChip(handChip, true, "Hand found");
-          setChip(motionChip, moving, moving ? "Moving" : "Still");
-        } else {
-          if (handLostSince === null) handLostSince = now;
-          if (now - handLostSince > CONFIG.handLostGraceMs) {
-            if (motion.active) finishMotion();
-            resetTracking();
-            lastLoggedKey = "";
-            suppressUntil = 0;
-            commit(NOHAND, null, true);
-            updateHold(now, false, false);
-            setChip(handChip, false, "No hand");
-            setChip(motionChip, false, "Still");
+        // 2. hands that disappeared: keep them briefly, then reset
+        for (const h of hands) {
+          if (!h.active || h.present) continue;
+          if (h.lostSince === null) h.lostSince = now;
+          if (now - h.lostSince > CONFIG.handLostGraceMs) {
+            if (h.motion.active) finishMotion(h);
+            Object.assign(h, newHand(h.id));
+            pair.buf.length = 0;
           }
         }
+
+        // 3. draw
+        const present = hands.filter(h => h.present);
+        present.forEach(h => { drawTrail(h, now); });
+        if (present.length === 2) drawLink(present[0], present[1]);
+        present.forEach(h => { drawHand(h.landmarks, h.features.ext); });
+
+        // 4. two-hand motion
+        if (present.length === 2) updatePair(now, hands[0], hands[1]);
+
+        // 5. pick what the readout shows: a two-hand sign, else the lead hand's sign
+        const act = hands.filter(h => h.active);
+        if (!act.length) {
+          lastLoggedKey = "";
+          suppressUntil = 0;
+          commit(NOHAND, null, true);
+          updateHold(now, false, false);
+          setChip(handChip, false, "No hand");
+          setChip(motionChip, false, "Still");
+        } else {
+          let rule = null;
+          if (act.length === 2) rule = lookupPairStatic(pairFeatures(act[0], act[1]));
+          const lead = pickLead(act);
+          if (!rule) rule = lead.rule;
+
+          if (lead.features.key !== lastLoggedKey) {
+            lastLoggedKey = lead.features.key;
+            console.log(lead.features.key);
+          }
+
+          commit(rule ? rule.label : UNKNOWN, rule);
+          const moving = act.some(h => h.motion.active || h.speed > CONFIG.hold.stillSpeed);
+          updateHold(now, moving, true);
+          setChip(handChip, true, act.length === 2 ? "2 hands" : "1 hand");
+          setChip(motionChip, moving, moving ? "Moving" : "Still");
+        }
+
         canvasCtx.restore();
       }
 
