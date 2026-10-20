@@ -28,13 +28,14 @@
   ],
 
   "[0, 1, 1, 0, 0]": [
+    { "when": { "thumbBetween": true }, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them" },
     { "when": { "spread": "together", "indexDir": "side" }, "label": "H", "say": "H", "kind": "letter", "hint": "Index and middle together, pointing sideways" },
     { "when": { "spread": "together" }, "label": "U", "say": "U", "kind": "letter", "hint": "Index and middle up, together" },
     { "label": "Peace / V / 2", "say": "V", "kind": "letter", "hint": "Index and middle up, apart" }
   ],
 
   "[1, 1, 1, 0, 0]": [
-    { "when": { "spread": "apart", "thumbDir": "up" }, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them" },
+    { "when": { "thumbBetween": true }, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them" },
     { "label": "Number 3", "say": "3", "kind": "number", "hint": "Thumb, index and middle out" }
   ],
 

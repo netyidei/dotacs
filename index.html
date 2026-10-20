@@ -4,40 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>dotacs</title>
+  <script>
+    // pick the theme before anything paints (no white flash in dark mode)
+    try {
+      const t = localStorage.getItem("dotacs.theme");
+      document.documentElement.dataset.theme = t ? JSON.parse(t)
+        : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    } catch (e) { document.documentElement.dataset.theme = "light"; }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap" rel="stylesheet">
   <style>
-    :root {
+    :root, :root[data-theme="light"] {
       --paper: #e8ecf3;
       --surface: #f8f9fc;
+      --tile: #ffffff;
       --ink: #13151f;
-      --ink-2: #1c1f2c;
       --muted: #5d6475;
       --line: #cfd5e1;
       --cobalt: #3346ff;
       --cobalt-soft: #dfe3ff;
       --marigold: #ffb319;
       --coral: #ff5a4d;
+      --mint: #22a06b;
+      --stage: #13151f;
+      --stage-2: #1c1f2c;
+      --glow-a: rgba(51, 70, 255, 0.13);
+      --glow-b: rgba(255, 179, 25, 0.14);
       --font: "Bricolage Grotesque", "Segoe UI", system-ui, -apple-system, sans-serif;
+      color-scheme: light;
+    }
+    :root[data-theme="dark"] {
+      --paper: #0b0d14;
+      --surface: #141724;
+      --tile: #1a1e2d;
+      --ink: #eef0f8;
+      --muted: #9aa2b8;
+      --line: #2a2f44;
+      --cobalt: #6274ff;
+      --cobalt-soft: #222a5e;
+      --mint: #3ccf8e;
+      --stage: #05060b;
+      --stage-2: #141724;
+      --glow-a: rgba(98, 116, 255, 0.16);
+      --glow-b: rgba(255, 179, 25, 0.07);
+      color-scheme: dark;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
-      background: var(--paper);
+      background:
+        radial-gradient(900px 500px at 8% -10%, var(--glow-a), transparent 60%),
+        radial-gradient(700px 420px at 100% 0%, var(--glow-b), transparent 60%),
+        var(--paper);
+      background-attachment: fixed;
       color: var(--ink);
       font-family: var(--font);
       font-variation-settings: "wdth" 92;
+      transition: background-color 0.3s;
     }
-    button { font: inherit; color: inherit; }
+    button, input, select { font: inherit; color: inherit; }
     :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+    [hidden] { display: none !important; }
 
     /* ---------- page frame ---------- */
     .top {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
       padding: 20px 32px 0;
       max-width: 1240px;
       margin: 0 auto;
@@ -55,7 +93,36 @@
       border-radius: 50% 50% 50% 6px;
       background: var(--cobalt);
       box-shadow: 9px -7px 0 -4px var(--marigold);
+      animation: bob 3.2s ease-in-out infinite;
     }
+    @keyframes bob { 50% { transform: translateY(-2px) rotate(-6deg); } }
+    .brand .tag {
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      color: var(--muted);
+      padding: 3px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      margin-left: 2px;
+    }
+    .tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .tool {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.92rem;
+      transition: border-color 0.15s, background 0.15s, transform 0.15s;
+    }
+    .tool:hover { border-color: var(--cobalt); transform: translateY(-1px); }
+    .tool svg { width: 16px; height: 16px; flex: none; }
+    .tool.icon { padding: 8px; }
+    .tool[aria-pressed="true"] { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
     #status {
       display: inline-flex;
       align-items: center;
@@ -68,9 +135,10 @@
       color: var(--muted);
     }
     #status i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-    #status[data-tone="ok"] i { background: #22a06b; }
+    #status[data-tone="ok"] i { background: var(--mint); box-shadow: 0 0 0 4px color-mix(in srgb, var(--mint) 25%, transparent); }
     #status[data-tone="error"] i { background: var(--coral); }
-    #status[data-tone="busy"] i { background: var(--marigold); }
+    #status[data-tone="busy"] i { background: var(--marigold); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: 0.3; } }
 
     .layout {
       display: grid;
@@ -84,7 +152,7 @@
 
     /* ---------- stage: video + live captions in one slab ---------- */
     .stage {
-      background: var(--ink);
+      background: var(--stage);
       border-radius: 22px;
       padding: 10px;
       box-shadow: 0 24px 50px -28px rgba(19, 21, 31, 0.7);
@@ -97,23 +165,47 @@
       overflow: hidden;
       background: #000;
     }
-    video, canvas {
+    .video-container video,
+    .video-container canvas {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      transform: scaleX(-1); /* Mirror effect */
+      object-fit: cover;          /* video and skeleton crop identically, so they line up on any camera */
+      transform: scaleX(-1);      /* mirror */
+      transition: opacity 0.4s;
     }
+
+    /* hologram mode: hide the camera, keep the glowing hand */
+    .video-container.holo { background: radial-gradient(circle at 50% 42%, #0f1d45, #02030a 72%); }
+    .video-container.holo video { opacity: 0; }
+    .video-container::before,
+    .video-container::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.4s; }
+    .video-container::before {
+      background-image:
+        linear-gradient(rgba(125, 249, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 249, 255, 0.07) 1px, transparent 1px);
+      background-size: 34px 34px;
+      background-position: center;
+    }
+    .video-container::after {
+      background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px);
+    }
+    .video-container.holo::before,
+    .video-container.holo::after { opacity: 1; }
+
     .hud {
       position: absolute;
       top: 12px;
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       pointer-events: none;
+      z-index: 2;
     }
     .hud.left { left: 12px; }
-    .hud.right { right: 12px; }
+    .hud.right { right: 12px; justify-content: flex-end; }
     .chip {
       display: inline-flex;
       align-items: center;
@@ -124,10 +216,13 @@
       backdrop-filter: blur(6px);
       color: #fff;
       font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
     }
     .chip i { width: 7px; height: 7px; border-radius: 50%; background: #7b8194; }
     .chip[data-on="1"] i { background: var(--marigold); }
     #motion-chip[data-on="1"] i { background: #8fa0ff; box-shadow: 0 0 0 4px rgba(143, 160, 255, 0.35); }
+    #sign-chip { background: var(--marigold); color: #13151f; font-weight: 700; padding: 4px 12px; }
+    #fps-chip { padding: 4px 11px; color: rgba(255, 255, 255, 0.75); }
 
     #motion-toast {
       position: absolute;
@@ -137,12 +232,13 @@
       padding: 8px 20px;
       border-radius: 12px;
       background: var(--marigold);
-      color: var(--ink);
+      color: #13151f;
       font-size: 1.5rem;
       font-weight: 700;
       letter-spacing: -0.02em;
       opacity: 0;
       pointer-events: none;
+      z-index: 2;
     }
     #motion-toast.show { animation: toast 1.5s ease-out; }
     @keyframes toast {
@@ -150,6 +246,50 @@
       12%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
       75%  { opacity: 1; }
       100% { opacity: 0; }
+    }
+
+    /* boot screen shown over the camera while things load */
+    .boot {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 40%, #1a1f3d, #07080e 75%);
+      color: #fff;
+      padding: 20px;
+      transition: opacity 0.5s;
+    }
+    .boot.gone { opacity: 0; pointer-events: none; }
+    .boot-card { display: grid; justify-items: center; gap: 18px; max-width: 380px; text-align: center; }
+    .boot-logo {
+      width: 54px; height: 54px;
+      border-radius: 50% 50% 50% 12px;
+      background: var(--cobalt);
+      box-shadow: 22px -16px 0 -9px var(--marigold);
+      animation: bob 1.6s ease-in-out infinite;
+    }
+    .boot-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; text-align: left; }
+    .boot-steps li { display: flex; align-items: center; gap: 10px; color: rgba(255, 255, 255, 0.45); }
+    .boot-steps li::before {
+      content: "";
+      width: 14px; height: 14px;
+      flex: none;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    .boot-steps li[data-state="busy"] { color: #fff; }
+    .boot-steps li[data-state="busy"]::before { border-color: var(--marigold); border-top-color: transparent; animation: spin 0.8s linear infinite; }
+    .boot-steps li[data-state="done"] { color: rgba(255, 255, 255, 0.85); }
+    .boot-steps li[data-state="done"]::before { background: #22a06b; border-color: #22a06b; }
+    .boot-steps li[data-state="error"] { color: #ffb4ad; }
+    .boot-steps li[data-state="error"]::before { background: var(--coral); border-color: var(--coral); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #boot-msg { margin: 0; color: rgba(255, 255, 255, 0.8); line-height: 1.45; font-size: 0.95rem; }
+    #boot-msg code { background: rgba(255, 255, 255, 0.12); padding: 1px 6px; border-radius: 5px; }
+    #boot-retry {
+      padding: 8px 18px; border-radius: 9px; border: 0;
+      background: var(--marigold); color: #13151f; font-weight: 600; cursor: pointer;
     }
 
     /* captions */
@@ -167,7 +307,7 @@
       color: #fff;
     }
     .sentence .placeholder { color: rgba(255, 255, 255, 0.45); font-weight: 400; font-size: 1.15rem; letter-spacing: 0; }
-    .tok { padding: 4px 12px 6px; border-radius: 10px; }
+    .tok { padding: 4px 12px 6px; border-radius: 10px; transition: box-shadow 0.3s, background 0.3s; }
     .tok.whole { background: var(--cobalt); }
     .tok.spelled { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
     .tok.live { color: var(--marigold); box-shadow: inset 0 0 0 2px var(--marigold); letter-spacing: 0.04em; }
@@ -183,9 +323,40 @@
     @keyframes blink { to { visibility: hidden; } }
     .tok.pop { animation: pop 0.28s ease-out; }
     @keyframes pop { from { transform: scale(0.85); } to { transform: scale(1); } }
+    .sentence.speaking .tok { box-shadow: 0 0 0 2px var(--marigold), 0 0 22px rgba(255, 179, 25, 0.55); }
+
+    /* word suggestions while spelling */
+    .suggest {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 10px;
+      padding: 4px 10px 0;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.85rem;
+    }
+    .suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .suggest-chips button {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 4px 11px 5px; border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff; cursor: pointer; font-size: 1rem; font-weight: 600;
+    }
+    .suggest-chips button:hover { background: rgba(255, 255, 255, 0.12); }
+    .suggest-chips button:first-child { border-color: var(--marigold); }
+    .suggest-chips kbd {
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.14);
+    }
 
     .actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 10px 8px; }
     .actions button {
+      display: inline-flex; align-items: center; gap: 7px;
       padding: 7px 15px;
       border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.22);
@@ -194,11 +365,110 @@
       cursor: pointer;
       font-size: 0.92rem;
     }
+    .actions button svg { width: 15px; height: 15px; }
     .actions button:hover { background: rgba(255, 255, 255, 0.1); }
-    .actions button.primary { background: var(--marigold); border-color: var(--marigold); color: var(--ink); font-weight: 600; }
+    .actions button.primary { background: var(--marigold); border-color: var(--marigold); color: #13151f; font-weight: 600; }
     .actions button.primary:hover { background: #ffc447; }
     .actions button:disabled { opacity: 0.4; cursor: not-allowed; }
     .actions .spacer { flex: 1; }
+
+    /* ---------- challenge (game) panel ---------- */
+    .stage.gaming .captions,
+    .stage.gaming .actions,
+    .stage.gaming .suggest { display: none !important; }
+    .challenge { padding: 16px 10px 10px; color: #fff; }
+    .challenge h3 { margin: 0 0 4px; font-size: 1.45rem; letter-spacing: -0.02em; }
+    .challenge p { margin: 0; color: rgba(255, 255, 255, 0.65); line-height: 1.4; }
+    .ch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 14px; }
+    .seg { display: inline-flex; padding: 3px; border-radius: 11px; background: rgba(255, 255, 255, 0.08); }
+    .seg button { border: 0; background: transparent; color: #fff; padding: 6px 13px; border-radius: 8px; cursor: pointer; }
+    .seg button[aria-pressed="true"] { background: #fff; color: #13151f; font-weight: 600; }
+    .ch-meta { color: rgba(255, 255, 255, 0.55); font-size: 0.9rem; }
+    .btn {
+      padding: 8px 18px; border-radius: 9px; cursor: pointer; font-size: 0.95rem;
+      border: 1px solid rgba(255, 255, 255, 0.22); background: transparent; color: #fff;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.1); }
+    .btn.go { background: var(--marigold); border-color: var(--marigold); color: #13151f; font-weight: 700; }
+    .btn.go:hover { background: #ffc447; }
+
+    .ch-play-grid { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; }
+    .target {
+      min-width: 92px;
+      padding: 6px 18px 10px;
+      border-radius: 18px;
+      background: var(--cobalt);
+      font-size: 4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      text-align: center;
+      box-shadow: 0 10px 30px -10px rgba(51, 70, 255, 0.9);
+    }
+    .target.word { font-size: 1.9rem; padding: 18px 18px 20px; }
+    .target.count { background: transparent; box-shadow: inset 0 0 0 3px var(--marigold); color: var(--marigold); }
+    .target.hit { animation: hit 0.5s ease-out; }
+    @keyframes hit {
+      0% { transform: scale(1); background: var(--cobalt); }
+      30% { transform: scale(1.16) rotate(-3deg); background: #22a06b; }
+      100% { transform: scale(1); }
+    }
+    .ch-tag {
+      display: inline-block; margin-bottom: 6px; padding: 2px 9px; border-radius: 999px;
+      font-size: 0.75rem; letter-spacing: 0.02em; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.8);
+    }
+    .ch-tag:empty { display: none; }
+    #ch-hint { font-size: 1.05rem; line-height: 1.35; color: rgba(255, 255, 255, 0.85); }
+    #ch-feedback { min-height: 1.3em; margin-top: 6px; font-size: 0.92rem; font-weight: 600; }
+    #ch-feedback[data-tone="hit"] { color: #6ee7a8; }
+    #ch-feedback[data-tone="miss"] { color: #ffb4ad; }
+    .stats { display: flex; gap: 18px; text-align: right; }
+    .stat span { display: block; font-size: 0.75rem; color: rgba(255, 255, 255, 0.55); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat b { display: block; font-size: 1.9rem; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .stat.streak b { color: var(--marigold); }
+    .timebar { height: 7px; margin-top: 16px; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+    .timebar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--marigold), var(--coral)); transform-origin: left; }
+    .timebar.low i { animation: pulse 0.5s ease-in-out infinite; }
+    .ch-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .ch-actions .spacer { flex: 1; }
+    .tc-say { margin-top: 8px; font-size: 1.15rem; font-weight: 700; color: var(--marigold); min-height: 1.4em; }
+    .tc-say[data-tone="ok"] { color: #6ee7a8; }
+    .tc-say[data-tone="warn"] { color: #ffb4ad; }
+    #tc-bar { background: linear-gradient(90deg, #7df9ff, var(--cobalt)); transform-origin: left; }
+    .teach-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+    .teach-list span { padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.75); }
+    .teach-list span.done { background: rgba(34, 160, 107, 0.35); color: #fff; }
+    .over-score { font-size: 3.6rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin: 6px 0 4px; }
+    #ov-best[data-best="1"] { color: var(--marigold); font-weight: 700; }
+
+    /* floating "+150" score popups and the particle layer */
+    #fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 60; }
+    .float {
+      position: fixed; z-index: 61; pointer-events: none;
+      transform: translate(-50%, -50%);
+      font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em;
+      color: var(--marigold);
+      text-shadow: 0 2px 0 #13151f, 0 0 18px rgba(255, 179, 25, 0.6);
+      animation: floatup 1s ease-out forwards;
+    }
+    @keyframes floatup {
+      0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+      15% { opacity: 1; transform: translate(-50%, -60%) scale(1.1); }
+      100% { opacity: 0; transform: translate(-50%, -190%) scale(1); }
+    }
+
+    /* presentation (fullscreen) mode */
+    .stage:fullscreen {
+      border-radius: 0;
+      padding: 2vh 3vw;
+      display: flex;
+      flex-direction: column;
+      background: var(--stage);
+      overflow: auto;
+    }
+    .stage:fullscreen .video-container { flex: 1 1 auto; aspect-ratio: auto; min-height: 45vh; }
+    .stage:fullscreen .sentence { font-size: clamp(2rem, 4.2vw, 3.6rem); }
+    .stage:fullscreen .target { font-size: 6rem; }
 
     /* ---------- side column ---------- */
     .side { display: grid; gap: 20px; }
@@ -217,7 +487,7 @@
     .ring circle { fill: none; stroke-width: 5; }
     .ring .track { stroke: var(--line); }
     .ring #ring-fg { stroke: var(--cobalt); stroke-linecap: round; transition: stroke-dashoffset 0.08s linear; }
-    .ring[data-done="1"] #ring-fg { stroke: #22a06b; }
+    .ring[data-done="1"] #ring-fg { stroke: var(--mint); }
     .ring.flash { animation: flash 0.45s ease-out; }
     @keyframes flash { 0% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
@@ -226,13 +496,18 @@
       font-weight: 700;
       letter-spacing: -0.03em;
       line-height: 1.05;
-      color: #22a06b;
+      color: var(--mint);
       overflow-wrap: anywhere;
     }
     #text-output[data-state="unknown"] { color: #d9731c; }
-    #text-output[data-state="none"] { color: #98a0b3; }
+    #text-output[data-state="none"] { color: var(--muted); }
     #text-output[data-state="idle"] { color: var(--ink); }
     #readout-hint { margin-top: 5px; color: var(--muted); font-size: 0.95rem; min-height: 1.2em; }
+    .readout > div:last-child { min-width: 0; flex: 1; }
+    .conf { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .conf-track { flex: 1; max-width: 180px; height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; }
+    .conf-track i { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--mint); transition: width 0.15s, background 0.15s; }
+    .conf[data-level="low"] .conf-track i { background: #d9731c; }
 
     .guide {
       background: var(--surface);
@@ -240,15 +515,30 @@
       border-radius: 16px;
       overflow: hidden;
     }
-    .guide-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 20px 0; }
+    .guide-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; padding: 16px 20px 0; }
     .guide-head h2 { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
-    .tabs { display: flex; gap: 18px; }
+    .tabs { display: flex; gap: 16px; }
     .tabs button {
       background: none; border: 0; padding: 0 0 8px; cursor: pointer;
       color: var(--muted);
       border-bottom: 3px solid transparent;
     }
     .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--cobalt); font-weight: 600; }
+    .search { padding: 0 14px 12px; }
+    .search input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--tile) no-repeat 11px 50% / 15px
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238891a5' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E");
+    }
+    .legend { padding: 0 20px 12px; font-size: 0.82rem; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+    .legend span::before {
+      content: ""; display: inline-block; width: 4px; height: 12px; margin-right: 6px; vertical-align: -2px; border-radius: 2px;
+    }
+    .legend .l-motion::before { background: var(--marigold); }
+    .legend .l-pair::before { background: var(--cobalt); }
     #guide-body {
       padding: 14px 14px 16px;
       max-height: 430px;
@@ -259,16 +549,22 @@
       gap: 8px;
       align-content: start;
     }
+    #guide-body.list { grid-template-columns: minmax(0, 1fr); }
     .tile {
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 8px 10px;
       border-radius: 6px;
-      background: #fff;
+      background: var(--tile);
       border: 1px solid var(--line);
       min-width: 0;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
     }
+    .tile:hover { border-color: var(--cobalt); transform: translateY(-1px); }
     .tile .glyph {
       flex: none;
       min-width: 30px;
@@ -283,17 +579,82 @@
     .tile.motion { border-left: 4px solid var(--marigold); }
     .tile.pair { border-left: 4px solid var(--cobalt); }
     .tile.live { background: var(--cobalt-soft); border-color: var(--cobalt); }
-    .legend { padding: 0 20px 12px; font-size: 0.82rem; color: var(--muted); display: flex; gap: 16px; }
-    .legend span::before {
-      content: ""; display: inline-block; width: 4px; height: 12px; margin-right: 6px; vertical-align: -2px; border-radius: 2px;
+    .tile { position: relative; }
+    .tile.taught::after {
+      content: "taught"; position: absolute; top: 4px; right: 6px;
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--marigold);
     }
-    .legend .l-motion::before { background: var(--marigold); }
-    .legend .l-pair::before { background: var(--cobalt); }
+    .empty { padding: 18px 6px; color: var(--muted); text-align: center; }
+
+    .hist {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--tile);
+      border: 1px solid var(--line);
+    }
+    .hist time { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .hist .txt { font-weight: 600; overflow-wrap: anywhere; }
+    .mini {
+      padding: 5px 11px; border-radius: 7px; border: 1px solid var(--line);
+      background: var(--surface); cursor: pointer; font-size: 0.85rem;
+    }
+    .mini:hover { border-color: var(--cobalt); }
+    .mini.danger:hover { border-color: var(--coral); color: var(--coral); }
+    .row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .note { margin: 0 0 10px; font-size: 0.9rem; color: var(--muted); line-height: 1.4; }
+    .hist-foot { display: flex; gap: 8px; padding: 0 14px 14px; }
+
+    /* ---------- settings dialog ---------- */
+    dialog {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0;
+      width: min(540px, calc(100vw - 32px));
+      max-height: calc(100vh - 48px);
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.6);
+    }
+    dialog::backdrop { background: rgba(5, 6, 11, 0.55); backdrop-filter: blur(3px); }
+    .settings header {
+      position: sticky; top: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 12px; background: var(--surface);
+    }
+    .settings h2 { margin: 0; font-size: 1.3rem; letter-spacing: -0.02em; }
+    .settings section { padding: 4px 22px 14px; border-top: 1px solid var(--line); }
+    .settings h3 { margin: 14px 0 10px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .field { display: grid; gap: 6px; margin-bottom: 14px; }
+    .field > span { display: flex; justify-content: space-between; font-size: 0.95rem; }
+    .field output { color: var(--cobalt); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .field input[type="range"] { width: 100%; accent-color: var(--cobalt); }
+    .field select { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--tile); }
+    .check { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; }
+    .check input { width: 18px; height: 18px; accent-color: var(--cobalt); }
+    .keys { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; margin: 0; font-size: 0.9rem; }
+    .keys dt kbd {
+      font: inherit; font-size: 0.8rem; font-weight: 600;
+      padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line); background: var(--tile);
+    }
+    .keys dd { margin: 0; color: var(--muted); }
+    .x { border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--muted); padding: 2px 6px; }
 
     @media (max-width: 980px) {
       .layout { grid-template-columns: minmax(0, 1fr); padding: 16px 16px 32px; }
       .top { padding: 16px 16px 0; }
       .sentence { font-size: 1.4rem; }
+    }
+    @media (max-width: 560px) {
+      .brand .tag, .tool .lbl { display: none; }
+      .tool { padding: 8px; }
+      .ch-play-grid { grid-template-columns: auto minmax(0, 1fr); }
+      .stats { grid-column: 1 / -1; justify-content: flex-start; text-align: left; }
+      .target { font-size: 3rem; min-width: 72px; }
     }
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
@@ -303,31 +664,178 @@
 <body>
 
   <header class="top">
-    <div class="brand"><span class="mark"></span>dotacs</div>
-    <div id="status" data-tone="busy"><i></i><span>Loading model...</span></div>
+    <div class="brand"><span class="mark"></span>dotacs<span class="tag">sign to speech</span></div>
+    <div class="tools">
+      <div id="status" data-tone="busy"><i></i><span>Loading...</span></div>
+      <button class="tool" id="btn-practice" aria-pressed="false" title="Practice challenge (G)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
+        <span class="lbl">Practice</span>
+      </button>
+      <button class="tool" id="btn-teach" aria-pressed="false" title="Teach it your hands for better accuracy (M)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5V4a1.5 1.5 0 0 1 3 0v7.5"/><path d="M14 11.5V5.5a1.5 1.5 0 0 1 3 0V14"/><path d="M17 9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-5-2.7L4.3 14.2a1.5 1.5 0 0 1 2.4-1.8L8 14"/></svg>
+        <span class="lbl">Teach</span>
+      </button>
+      <button class="tool" id="btn-holo" aria-pressed="false" title="Hologram mode: hide the camera, keep the hand (H)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16l.7 1.8L21.5 18.5l-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/></svg>
+        <span class="lbl">Hologram</span>
+      </button>
+      <button class="tool icon" id="btn-theme" title="Light / dark (T)" aria-label="Switch light and dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+      </button>
+      <button class="tool icon" id="btn-settings" title="Settings and shortcuts (?)" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="18" cy="18" r="2.2"/></svg>
+      </button>
+    </div>
   </header>
 
   <main class="layout">
-    <section class="stage">
-      <div class="video-container">
-        <video id="webcam" autoplay playsinline></video>
+    <section class="stage" id="stage">
+      <div class="video-container" id="video-container">
+        <video id="webcam" autoplay playsinline muted></video>
         <canvas id="output_canvas" width="640" height="480"></canvas>
-        <div class="hud left"><span class="chip" id="hand-chip" data-on="0"><i></i><span>No hand</span></span></div>
-        <div class="hud right"><span class="chip" id="motion-chip" data-on="0"><i></i><span>Still</span></span></div>
+        <div class="hud left">
+          <span class="chip" id="hand-chip" data-on="0"><i></i><span>No hand</span></span>
+          <span class="chip" id="sign-chip" hidden><span></span></span>
+        </div>
+        <div class="hud right">
+          <span class="chip" id="fps-chip" hidden><span>-- fps</span></span>
+          <span class="chip" id="motion-chip" data-on="0"><i></i><span>Still</span></span>
+        </div>
         <div id="motion-toast" aria-hidden="true"></div>
+
+        <div class="boot" id="boot">
+          <div class="boot-card">
+            <div class="boot-logo"></div>
+            <ol class="boot-steps">
+              <li id="boot-signs" data-state="wait">Loading the sign list</li>
+              <li id="boot-model" data-state="wait">Loading the hand tracker</li>
+              <li id="boot-camera" data-state="wait">Starting the camera</li>
+            </ol>
+            <p id="boot-msg" hidden></p>
+            <button id="boot-retry" hidden>Try again</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- practice challenge -->
+      <div class="challenge" id="challenge" hidden>
+        <div id="ch-intro">
+          <h3>60-second challenge</h3>
+          <p>Sign as many as you can before the clock runs out. Fast answers and streaks score more.</p>
+          <div class="ch-row">
+            <div class="seg" id="ch-pool" role="group" aria-label="Which signs">
+              <button data-pool="letters" aria-pressed="true">Letters</button>
+              <button data-pool="words" aria-pressed="false">Words</button>
+              <button data-pool="all" aria-pressed="false">Everything</button>
+            </div>
+            <span class="ch-meta" id="ch-meta"></span>
+          </div>
+          <div class="ch-actions">
+            <button class="btn go" id="ch-start">Start (Enter)</button>
+            <span class="spacer"></span>
+            <button class="btn" data-close>Close</button>
+          </div>
+        </div>
+
+        <div id="ch-play" hidden>
+          <div class="ch-play-grid">
+            <div class="target" id="ch-target">A</div>
+            <div>
+              <span class="ch-tag" id="ch-tag"></span>
+              <div id="ch-hint"></div>
+              <div id="ch-feedback"></div>
+            </div>
+            <div class="stats">
+              <div class="stat"><span id="stat-score-label">Score</span><b id="stat-score">0</b></div>
+              <div class="stat streak"><span>Streak</span><b id="stat-streak">0</b></div>
+            </div>
+          </div>
+          <div class="timebar" id="ch-timebar"><i id="ch-timebar-fill"></i></div>
+          <div class="ch-actions">
+            <button class="btn" id="ch-skip">Skip (S)</button>
+            <button class="btn" id="ch-teach-one" hidden>Teach it this sign</button>
+            <span class="spacer"></span>
+            <button class="btn" data-close>Exit (Esc)</button>
+          </div>
+        </div>
+
+        <div id="tc-intro" hidden>
+          <h3>Teach it your hands</h3>
+          <p>Everyone signs a little differently. Show each sign for two seconds and dotacs learns how <b>your</b> hands look, which makes it far more accurate for you. It also works for left-handed signers. All letters take about two minutes.</p>
+          <div class="ch-row">
+            <div class="seg" id="tc-pool" role="group" aria-label="Which signs">
+              <button data-pool="letters" aria-pressed="true">Letters</button>
+              <button data-pool="words" aria-pressed="false">Words</button>
+              <button data-pool="all" aria-pressed="false">Everything</button>
+            </div>
+            <span class="ch-meta" id="tc-meta"></span>
+          </div>
+          <div class="teach-list" id="tc-list"></div>
+          <div class="ch-actions">
+            <button class="btn go" id="tc-start">Start teaching (Enter)</button>
+            <span class="spacer"></span>
+            <button class="btn" data-close>Close</button>
+          </div>
+        </div>
+
+        <div id="tc-run" hidden>
+          <div class="ch-play-grid">
+            <div class="target" id="tc-target">A</div>
+            <div>
+              <span class="ch-tag" id="tc-step"></span>
+              <div id="tc-hint"></div>
+              <div class="tc-say" id="tc-say"></div>
+            </div>
+            <div class="stats">
+              <div class="stat"><span>Sign</span><b id="tc-count">1/1</b></div>
+            </div>
+          </div>
+          <div class="timebar"><i id="tc-bar"></i></div>
+          <div class="ch-actions">
+            <button class="btn" id="tc-back">Back</button>
+            <button class="btn" id="tc-skip">Skip (S)</button>
+            <span class="spacer"></span>
+            <button class="btn" data-close>Stop (Esc)</button>
+          </div>
+        </div>
+
+        <div id="ch-over" hidden>
+          <p>Time's up</p>
+          <div class="over-score" id="ov-score">0</div>
+          <p id="ov-detail"></p>
+          <p id="ov-best"></p>
+          <div class="ch-actions">
+            <button class="btn go" id="ch-again">Play again (Enter)</button>
+            <span class="spacer"></span>
+            <button class="btn" data-close>Done</button>
+          </div>
+        </div>
       </div>
 
       <div class="captions">
         <div id="sentence" class="sentence" aria-live="polite"></div>
       </div>
+      <div class="suggest" id="suggest" hidden>
+        <span>Finish the word:</span>
+        <div class="suggest-chips" id="suggest-chips"></div>
+      </div>
       <div class="actions">
-        <button id="btn-speak" class="primary" title="Read the sentence aloud (Enter)">Speak</button>
+        <button id="btn-speak" class="primary" title="Read the sentence aloud (Enter)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+          Speak
+        </button>
         <button id="btn-space" title="Finish the word you are spelling (Space)">Next word</button>
         <button id="btn-back" title="Remove the last letter or word (Backspace)">Undo</button>
         <button id="btn-copy" title="Copy the sentence as text">Copy</button>
         <span class="spacer"></span>
+        <button id="btn-present" title="Full screen presentation mode (F)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          <span>Present</span>
+        </button>
         <button id="btn-clear" title="Start over (Escape)">Clear</button>
       </div>
+
+      <canvas id="fx" aria-hidden="true"></canvas>
     </section>
 
     <section class="side">
@@ -339,8 +847,9 @@
           </svg>
         </div>
         <div>
-          <div id="text-output" data-state="idle">Loading model...</div>
+          <div id="text-output" data-state="idle">Loading...</div>
           <div id="readout-hint"></div>
+          <div class="conf" id="conf" hidden><div class="conf-track"><i id="conf-bar"></i></div><span id="conf-text"></span></div>
         </div>
       </div>
 
@@ -348,24 +857,100 @@
         <div class="guide-head">
           <h2>Sign guide</h2>
           <div class="tabs" role="tablist">
-            <button role="tab" data-tab="letters" aria-selected="true">Letters and numbers</button>
+            <button role="tab" data-tab="letters" aria-selected="true">Letters &amp; numbers</button>
             <button role="tab" data-tab="words" aria-selected="false">Words</button>
+            <button role="tab" data-tab="history" aria-selected="false">History</button>
           </div>
+        </div>
+        <div class="search" id="search-wrap">
+          <input type="search" id="guide-search" placeholder="Find a sign (click one to practise)" autocomplete="off">
         </div>
         <div class="legend" id="legend" hidden>
           <span class="l-motion">Motion</span>
           <span class="l-pair">Two hands</span>
         </div>
         <div id="guide-body"></div>
+        <div class="hist-foot" id="hist-foot" hidden>
+          <button class="mini" id="hist-download">Download transcript</button>
+          <button class="mini" id="hist-clear">Clear history</button>
+        </div>
       </div>
     </section>
   </main>
 
+  <dialog id="settings">
+    <form method="dialog" class="settings">
+      <header>
+        <h2>Settings</h2>
+        <button class="x" value="close" aria-label="Close">&times;</button>
+      </header>
+      <section>
+        <h3>Signing</h3>
+        <label class="field"><span>Hold a sign this long to add it <output data-for="holdMs"></output></span>
+          <input type="range" min="350" max="1500" step="50" data-setting="holdMs"></label>
+        <label class="field"><span>Pause that ends a spelled word <output data-for="wordGapMs"></output></span>
+          <input type="range" min="1000" max="5000" step="100" data-setting="wordGapMs"></label>
+        <label class="field"><span>Which hand types when both are in view</span>
+          <select data-setting="leadHand">
+            <option value="auto">The hand that appeared first</option>
+            <option value="left">The hand on the left of the screen</option>
+            <option value="right">The hand on the right of the screen</option>
+          </select></label>
+        <label class="check"><input type="checkbox" data-setting="suggest"> Suggest words while spelling</label>
+      </section>
+      <section>
+        <h3>Voice</h3>
+        <label class="check"><input type="checkbox" data-setting="autoSpeak"> Say each word out loud as soon as it is added</label>
+        <label class="field"><span>Voice</span><select id="set-voice" data-setting="voice"></select></label>
+        <label class="field"><span>Speaking speed <output data-for="rate"></output></span>
+          <input type="range" min="0.6" max="1.6" step="0.1" data-setting="rate"></label>
+      </section>
+      <section>
+        <h3>Look and sound</h3>
+        <label class="check"><input type="checkbox" data-setting="holo"> Hologram mode (hide the camera picture)</label>
+        <label class="check"><input type="checkbox" data-setting="skeleton"> Draw the hand skeleton</label>
+        <label class="check"><input type="checkbox" data-setting="sounds"> Sound effects</label>
+        <label class="check"><input type="checkbox" data-setting="particles"> Particles and confetti</label>
+        <label class="check"><input type="checkbox" data-setting="showFps"> Show frame rate</label>
+      </section>
+      <section>
+        <h3>Keyboard</h3>
+        <dl class="keys">
+          <dt><kbd>Enter</kbd></dt><dd>Speak the sentence</dd>
+          <dt><kbd>Space</kbd></dt><dd>Finish the spelled word</dd>
+          <dt><kbd>Tab</kbd></dt><dd>Accept the first word suggestion</dd>
+          <dt><kbd>Backspace</kbd></dt><dd>Undo</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Clear the sentence, or leave practice</dd>
+          <dt><kbd>G</kbd></dt><dd>Practice challenge</dd>
+          <dt><kbd>S</kbd></dt><dd>Skip a sign in practice or teaching</dd>
+          <dt><kbd>H</kbd></dt><dd>Hologram mode</dd>
+          <dt><kbd>F</kbd></dt><dd>Presentation mode</dd>
+          <dt><kbd>T</kbd></dt><dd>Light or dark theme</dd>
+          <dt><kbd>M</kbd></dt><dd>Teach it your hands</dd>
+          <dt><kbd>?</kbd></dt><dd>This panel</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Signs you taught</h3>
+        <p class="note" id="model-note"></p>
+        <div class="row-btns">
+          <button class="mini" type="button" id="model-teach">Teach signs</button>
+          <button class="mini" type="button" id="model-export">Save to a file</button>
+          <button class="mini" type="button" id="model-import">Load from a file</button>
+          <button class="mini danger" type="button" id="model-forget">Forget all</button>
+          <input type="file" id="model-file" accept=".json,application/json" hidden>
+        </div>
+      </section>
+      <section>
+        <h3>Reset</h3>
+        <button class="mini" type="button" id="settings-reset">Restore default settings</button>
+      </section>
+    </form>
+  </dialog>
+
   <script type="module">
-    import {
-      HandLandmarker,
-      FilesetResolver
-    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
+    import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
+    import { SignEngine, SignModel, motionTemplate } from "./recognizer.js";
 
     const $ = (id) => document.getElementById(id);
     const video = $("webcam");
@@ -377,125 +962,119 @@
     const ringFg = $("ring-fg");
     const statusEl = $("status");
     const handChip = $("hand-chip");
+    const signChip = $("sign-chip");
+    const fpsChip = $("fps-chip");
     const motionChip = $("motion-chip");
     const motionToast = $("motion-toast");
     const sentenceEl = $("sentence");
     const guideBody = $("guide-body");
+    const stageEl = $("stage");
+    const containerEl = $("video-container");
+    const settingsDlg = $("settings");
 
-    // Add ?debug to the page URL to print feature values and motion analysis to the console.
+    // Add ?debug to the page URL to print what the recogniser sees to the console.
     const DEBUG = new URLSearchParams(location.search).has("debug");
 
     // ------------------------------------------------------------------
-    // Tunable settings
+    // Page settings (recognition settings live in recognizer.js)
     // ------------------------------------------------------------------
     const CONFIG = {
-      // static hand shape
-      smoothing: 0.55,
-      stableFrames: 4,
-      handLostGraceMs: 350,
-      fingerAngle: { min: 100, max: 165 },
-      fingerOn: 0.60,
-      fingerOff: 0.35,
-      thumbAcrossOn: 0.38,
-      thumbAcrossOff: 0.50,
-      thumbOut: 0.85,
-      touch: 0.30,
-      spreadApart: 1.5,
-      curvedAvg: { min: 0.15, max: 0.70 },
-
-      // which hand types letters and one-hand words when both hands are in view
-      // (two-hand signs are checked first). "auto" = the hand that appeared first,
-      // "left" / "right" = the hand on that side of the screen as you see it.
-      leadHand: "auto",
-
-      // adding signs to the sentence
       hold: {
         holdMs: 700,        // hold a still sign this long to add it
         repeatMs: 1500,     // keep holding a letter this long to type it again (double letters)
         wordGapMs: 2200,    // pause this long and the spelled letters become a word
-        stillSpeed: 0.8,    // palm lengths/second; faster than this counts as moving
-        afterMotionMs: 1500 // ignore held shapes right after a motion sign
+        afterMotionMs: 1500,// ignore held shapes right after a motion sign
+        minConf: 0.45       // how sure the recogniser must be before a held sign counts
       },
-
-      // one-hand motion (all distances are in palm lengths, so they work at any distance)
-      motion: {
-        startSpeed: 1.0,
-        stopSpeed: 0.5,
-        stopMs: 220,
-        minMs: 280,
-        maxMs: 2600,
-        minPath: 0.8,
-        swingAmp: 0.3,                 // smallest back-and-forth stroke that counts
-        minCircleTurn: 1.5 * Math.PI,  // about 270 degrees
-        minSwipe: 1.0,
-        repeatBlockMs: 1800            // ignore the same motion sign repeating this soon
-      },
-
-      // finger flapping (bye, come here)
-      flap: { windowMs: 1600, minCloses: 2, high: 0.65, low: 0.35, maxSpeed: 0.8, cooldownMs: 1500 },
-
-      // path templates (J, Z)
-      template: { points: 32, maxDist: 0.22 },
-
-      // two-hand motion
-      pair: {
-        windowMs: 1500,
-        altRange: 0.5,      // each hand must travel at least this far vertically (6-7)
-        altAmp: 0.25,       // smallest up/down stroke that counts (6-7)
-        altCorr: -0.35,     // how opposite the two hands' vertical motion must be (-1 = perfectly)
-        clapAmp: 0.5,       // smallest in/out stroke of the gap between hands (clap)
-        clapRange: 1.0,
-        moveDelta: 1.0,     // gap change for "apart" / "together"
-        cooldownMs: 1800,
-        gapOverlap: 0.7,    // palm distance (in palm lengths) below this = hands overlap
-        gapNear: 1.8        // ...below this = near, otherwise far
-      }
+      game: { roundMs: 60000 },
+      teach: { readyMs: 1800, captureMs: 2000, motionWaitMs: 8000, savedMs: 750 }
     };
 
     const UNKNOWN = "Unknown Gesture";
     const NOHAND = "No hand detected";
 
     let handLandmarker;
+    let engine = null;
     let lastVideoTime = -1;
-    let gestureDictionary = {};
 
     // ------------------------------------------------------------------
-    // Status helpers
+    // Saved settings (localStorage, wrapped so private windows still work)
     // ------------------------------------------------------------------
+    const store = {
+      get(k, d) {
+        try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; }
+      },
+      set(k, v) {
+        try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; }
+      }
+    };
+
+    const DEFAULTS = {
+      holdMs: 700, wordGapMs: 2200, leadHand: "auto", suggest: true,
+      autoSpeak: false, voice: "", rate: 1,
+      holo: false, skeleton: true, sounds: true, particles: true, showFps: true
+    };
+    const settings = Object.assign({}, DEFAULTS, store.get("dotacs.settings", {}));
+    const saveSettings = () => store.set("dotacs.settings", settings);
+
+    // the signs this person taught it
+    const model = new SignModel(store.get("dotacs.model", null));
+    function saveModel() {
+      if (!store.set("dotacs.model", model.toJSON())) console.warn("Could not save the taught signs in this browser");
+      updateModelNote();
+      renderGuide();
+      setReadyStatus();
+    }
+
+    function applySettings() {
+      CONFIG.hold.holdMs = +settings.holdMs;
+      CONFIG.hold.wordGapMs = +settings.wordGapMs;
+      if (engine) engine.cfg.leadHand = settings.leadHand;
+      containerEl.classList.toggle("holo", !!settings.holo);
+      $("btn-holo").setAttribute("aria-pressed", String(!!settings.holo));
+      fpsChip.hidden = !settings.showFps;
+      updateSuggestions();
+    }
+
+    // ------------------------------------------------------------------
+    // Status and boot screen
+    // ------------------------------------------------------------------
+    let cameraOn = false;
     function setStatus(text, tone) {
       statusEl.dataset.tone = tone;
       statusEl.querySelector("span").textContent = text;
     }
+    function setReadyStatus() {
+      if (!cameraOn) return;
+      const n = model.size;
+      setStatus(n ? `Camera on · ${n} sign${n === 1 ? "" : "s"} taught` : "Camera on", "ok");
+    }
+    function setBoot(step, state) { $("boot-" + step).dataset.state = state; }
+    function bootError(html, retry = false) {
+      const msg = $("boot-msg");
+      msg.innerHTML = html;
+      msg.hidden = false;
+      $("boot-retry").hidden = !retry;
+    }
+    function hideBoot() {
+      $("boot").classList.add("gone");
+      setTimeout(() => { $("boot").hidden = true; }, 600);
+    }
+    $("boot-retry").addEventListener("click", () => {
+      $("boot-msg").hidden = true;
+      $("boot-retry").hidden = true;
+      startWebcam();
+    });
 
     // ------------------------------------------------------------------
     // Loading
     // ------------------------------------------------------------------
-    const RESERVED = new Set(["motions", "pairs"]);
-
-    function normRule(r) {
-      if (typeof r === "string") r = { label: r };
-      const say = r.say ?? r.label;
-      const kind = r.kind ?? (/^[A-Za-z]$/.test(say) ? "letter" : /^\d$/.test(say) ? "number" : "word");
-      return Object.assign(r, { say, kind });
-    }
-
-    function normalizeDictionary(dict) {
-      const motions = (dict.motions || []).map(normRule);
-      const pairs = (dict.pairs || []).map(normRule);
-      for (const key of Object.keys(dict)) {
-        if (RESERVED.has(key)) continue;
-        const v = dict[key];
-        dict[key] = (Array.isArray(v) ? v : [v]).map(normRule);
-      }
-      dict.motions = motions;
-      dict.pairs = pairs;
-      return dict;
-    }
-
     async function loadGestures() {
       try {
-        const response = await fetch('gestures.json');
-        gestureDictionary = normalizeDictionary(await response.json());
+        const response = await fetch("gestures.json");
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        engine = new SignEngine(await response.json(), { leadHand: settings.leadHand }, model);
+        engine.debug = DEBUG;
         return true;
       } catch (err) {
         console.error("Could not load gestures.json (serve the folder over http, not file://)", err);
@@ -507,258 +1086,258 @@
     }
 
     async function initializeHandTracker() {
-      if (!(await loadGestures())) return;
+      setBoot("signs", "busy");
+      if (!(await loadGestures())) {
+        setBoot("signs", "error");
+        bootError(location.protocol === "file:"
+          ? "This page was opened as a file, so the browser blocks <code>gestures.json</code> and <code>recognizer.js</code>. Open the folder through a small web server instead, for example run <code>python -m http.server</code> in the project folder and visit <code>localhost:8000</code>."
+          : "Could not load <code>gestures.json</code>. Make sure it sits next to <code>index.html</code>.");
+        return;
+      }
       buildGuide();
       renderSentence();
+      setBoot("signs", "done");
 
-      const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-      );
-
-      const options = (delegate) => ({
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-          delegate
-        },
-        runningMode: "VIDEO",
-        numHands: 2,
-        minHandDetectionConfidence: 0.6,
-        minHandPresenceConfidence: 0.6,
-        minTrackingConfidence: 0.6
-      });
-
+      setBoot("model", "busy");
+      setStatus("Loading hand tracker...", "busy");
       try {
-        handLandmarker = await HandLandmarker.createFromOptions(vision, options("GPU"));
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+        );
+        const options = (delegate) => ({
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate
+          },
+          runningMode: "VIDEO",
+          numHands: 2,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+        try {
+          handLandmarker = await HandLandmarker.createFromOptions(vision, options("GPU"));
+        } catch (err) {
+          console.warn("GPU delegate unavailable, falling back to CPU", err);
+          handLandmarker = await HandLandmarker.createFromOptions(vision, options("CPU"));
+        }
       } catch (err) {
-        console.warn("GPU delegate unavailable, falling back to CPU", err);
-        handLandmarker = await HandLandmarker.createFromOptions(vision, options("CPU"));
+        console.error("Hand tracker failed to load", err);
+        setBoot("model", "error");
+        setStatus("Hand tracker failed to load", "error");
+        bootError("Could not download the hand-tracking model. Check the internet connection and reload the page.");
+        return;
       }
-
+      setBoot("model", "done");
       startWebcam();
     }
 
+    let loopStarted = false;
+
     async function startWebcam() {
+      setBoot("camera", "busy");
+      setStatus("Starting camera...", "busy");
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            frameRate: { ideal: 30 },
-            facingMode: "user"
-          }
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: "user" }
         });
         video.srcObject = stream;
-        video.addEventListener("loadeddata", predictWebcam);
-        textOutput.innerText = "Show a gesture";
-        textOutput.dataset.state = "idle";
-        setStatus("Camera on", "ok");
+        video.addEventListener("loadeddata", () => {
+          sizeCanvas();
+          setBoot("camera", "done");
+          hideBoot();
+          textOutput.innerText = "Show a gesture";
+          textOutput.dataset.state = "idle";
+          cameraOn = true;
+          setReadyStatus();
+          if (!loopStarted) { loopStarted = true; predictWebcam(); }
+        }, { once: true });
       } catch (err) {
+        console.error(err);
         textOutput.innerText = "Camera access denied";
         textOutput.dataset.state = "unknown";
         setStatus("Camera access denied", "error");
+        setBoot("camera", "error");
+        bootError(err && err.name === "NotFoundError"
+          ? "No camera was found. Plug one in and try again."
+          : "The camera is blocked. Click the camera icon in the address bar, allow access, then try again.", true);
       }
     }
 
-    // ------------------------------------------------------------------
-    // Geometry helpers
-    // ------------------------------------------------------------------
+    // canvas matches the camera's own size (sharper on big screens, lines up with object-fit: cover)
+    function sizeCanvas() {
+      const k = Math.min(window.devicePixelRatio || 1, 2);
+      const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+      canvasElement.width = Math.round(vw * k);
+      canvasElement.height = Math.round(vh * k);
+    }
+    video.addEventListener("resize", sizeCanvas);
+
     const clamp01 = (v) => Math.max(0, Math.min(1, v));
-    const d3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-
-    function angleAt(a, b, c) {
-      const ux = a.x - b.x, uy = a.y - b.y, uz = a.z - b.z;
-      const vx = c.x - b.x, vy = c.y - b.y, vz = c.z - b.z;
-      const dot = ux * vx + uy * vy + uz * vz;
-      const mag = Math.hypot(ux, uy, uz) * Math.hypot(vx, vy, vz) || 1e-9;
-      return Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180 / Math.PI;
-    }
-
-    function dirOf(I, a, b, vw, vh) {
-      const dx = (I[b].x - I[a].x) * vw;
-      const dy = (I[b].y - I[a].y) * vh;
-      const deg = Math.atan2(-dy, dx) * 180 / Math.PI;
-      if (deg > 45 && deg < 135) return "up";
-      if (deg < -45 && deg > -135) return "down";
-      return "side";
-    }
-
-    function ema(prev, cur, a) {
-      if (!prev) return cur.map(p => ({ x: p.x, y: p.y, z: p.z || 0 }));
-      return cur.map((p, i) => ({
-        x: prev[i].x + a * (p.x - prev[i].x),
-        y: prev[i].y + a * (p.y - prev[i].y),
-        z: prev[i].z + a * ((p.z || 0) - prev[i].z)
-      }));
-    }
-
-    function hyst(state, name, value, low, high) {
-      if (value > high) state[name] = true;
-      else if (value < low) state[name] = false;
-      return !!state[name];
-    }
-
-    const range = (a) => Math.max(...a) - Math.min(...a);
-    const mean = (a) => a.reduce((s, v) => s + v, 0) / (a.length || 1);
-
-    function correlation(a, b) {
-      const ma = mean(a), mb = mean(b);
-      let num = 0, da = 0, db = 0;
-      for (let i = 0; i < a.length; i++) {
-        const x = a[i] - ma, y = b[i] - mb;
-        num += x * y; da += x * x; db += y * y;
-      }
-      return num / (Math.sqrt(da * db) || 1e-9);
-    }
 
     // ------------------------------------------------------------------
-    // Per-hand state. There are two slots; a detected hand keeps its slot by
-    // staying closest to where that slot's hand was last seen.
+    // Sound effects (tiny synth, no audio files needed)
     // ------------------------------------------------------------------
-    function newHand(id) {
-      return {
-        id, active: false, present: false, lostSince: null, appearedAt: 0, lastPalm: null,
-        smoothW: null, smoothI: null, hyst: {},
-        buffer: [], scaleEma: 0, speedEma: 0, speed: 0, lastMovingAt: 0,
-        motion: { active: false, samples: [], stillSince: null, startCount: 0 },
-        fingerHist: [], flapCooldownUntil: 0,
-        landmarks: null, features: null, rule: null, sample: null
-      };
+    let actx = null;
+    function tone(freq, dur = 0.08, type = "sine", gain = 0.06, when = 0) {
+      if (!settings.sounds) return;
+      try {
+        actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+        if (actx.state === "suspended") actx.resume();
+        const t = actx.currentTime + when;
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(gain, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(actx.destination);
+        o.start(t);
+        o.stop(t + dur + 0.03);
+      } catch (e) { /* audio unavailable */ }
     }
-    const hands = [newHand(0), newHand(1)];
-
-    // ------------------------------------------------------------------
-    // Static hand-shape features
-    // ------------------------------------------------------------------
-    const FINGERS = {
-      index:  [5, 6, 7, 8],
-      middle: [9, 10, 11, 12],
-      ring:   [13, 14, 15, 16],
-      pinky:  [17, 18, 19, 20]
+    const sfx = {
+      letter: () => tone(880, 0.07, "triangle", 0.05),
+      word: () => { tone(660, 0.1, "sine", 0.06); tone(990, 0.16, "sine", 0.06, 0.08); },
+      success: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, "triangle", 0.06, i * 0.06)),
+      miss: () => tone(196, 0.14, "sawtooth", 0.025),
+      tick: () => tone(1250, 0.04, "square", 0.02),
+      end: () => [784, 659, 523, 392].forEach((f, i) => tone(f, 0.2, "triangle", 0.06, i * 0.1)),
+      best: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.2, "triangle", 0.07, i * 0.08))
     };
-    const TIPS = { index: 8, middle: 12, ring: 16, pinky: 20 };
+    ["pointerdown", "keydown"].forEach(ev => addEventListener(ev, () => { if (actx && actx.state === "suspended") actx.resume(); }));
 
-    function extractFeatures(h, W, I, vw, vh) {
-      const palm = d3(W[0], W[9]) || 1e-6;
+    // ------------------------------------------------------------------
+    // Speech
+    // ------------------------------------------------------------------
+    let voices = [];
+    function loadVoices() {
+      if (!("speechSynthesis" in window)) return;
+      voices = speechSynthesis.getVoices().slice().sort((a, b) =>
+        (b.lang.startsWith("en") - a.lang.startsWith("en")) || a.name.localeCompare(b.name));
+      const sel = $("set-voice");
+      sel.textContent = "";
+      sel.add(new Option("System default", ""));
+      voices.forEach(v => sel.add(new Option(`${v.name} (${v.lang})`, v.voiceURI)));
+      sel.value = voices.some(v => v.voiceURI === settings.voice) ? settings.voice : "";
+    }
+    if ("speechSynthesis" in window) {
+      loadVoices();
+      speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
+    }
 
-      const score = {};
-      for (const [name, [mcp, pip, dip, tip]] of Object.entries(FINGERS)) {
-        const ang = angleAt(W[mcp], W[pip], W[dip]);
-        let s = clamp01((ang - CONFIG.fingerAngle.min) / (CONFIG.fingerAngle.max - CONFIG.fingerAngle.min));
-        if (d3(W[0], W[tip]) < d3(W[0], W[pip])) s *= 0.4;
-        score[name] = s;
-      }
-
-      let touch = "none", best = CONFIG.touch;
-      for (const [name, tip] of Object.entries(TIPS)) {
-        const dd = d3(W[4], W[tip]) / palm;
-        if (dd < best) { best = dd; touch = name; }
-      }
-
-      const ext = {};
-      for (const name of Object.keys(FINGERS)) {
-        ext[name] = hyst(h.hyst, "f_" + name, score[name], CONFIG.fingerOff, CONFIG.fingerOn);
-      }
-      if (touch !== "none" && score[touch] < 0.8) ext[touch] = false;
-
-      const acrossDist = Math.min(d3(W[4], W[10]), d3(W[4], W[13]), d3(W[4], W[14])) / palm;
-      const across = hyst(h.hyst, "thumbAcross", -acrossDist, -CONFIG.thumbAcrossOff, -CONFIG.thumbAcrossOn);
-      const outRatio = d3(W[4], W[6]) / palm;
-      const thumbPos = across ? "across" : (outRatio > CONFIG.thumbOut ? "out" : "side");
-      ext.thumb = thumbPos !== "across";
-      const thumb = ext.thumb ? 1 : 0;
-
-      const vals = Object.values(score);
-      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const shape = (avg > CONFIG.curvedAvg.min && avg < CONFIG.curvedAvg.max && Math.max(...vals) < 0.85)
-        ? "curved" : "none";
-
-      const hookIndex = score.index > 0.2 && score.index < 0.62 &&
-        score.middle < 0.2 && score.ring < 0.2 && score.pinky < 0.2;
-
-      const spreadRatio = d3(W[8], W[12]) / (d3(W[5], W[9]) || 1e-6);
-      const spread = spreadRatio > CONFIG.spreadApart ? "apart" : "together";
-
-      const key = `[${thumb}, ${+ext.index}, ${+ext.middle}, ${+ext.ring}, ${+ext.pinky}]`;
-
-      return {
-        key, thumbPos, touch, shape, hookIndex, spread, ext,
-        handDir:  dirOf(I, 0, 9, vw, vh),
-        thumbDir: dirOf(I, 2, 4, vw, vh),
-        indexDir: dirOf(I, 5, 8, vw, vh),
-        _scores: score
-      };
+    function speak(text, queue = false) {
+      if (!text || !("speechSynthesis" in window)) return;
+      if (!queue) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const v = voices.find(x => x.voiceURI === settings.voice);
+      if (v) { u.voice = v; u.lang = v.lang; }
+      u.rate = +settings.rate || 1;
+      u.onstart = () => sentenceEl.classList.add("speaking");
+      u.onend = u.onerror = () => sentenceEl.classList.remove("speaking");
+      speechSynthesis.speak(u);
     }
 
     // ------------------------------------------------------------------
-    // Gesture lookup (see gestures.json)
+    // Particles, confetti and score pop-ups
     // ------------------------------------------------------------------
-    function matches(when, f) {
-      return Object.entries(when).every(([k, v]) =>
-        Array.isArray(v) ? v.includes(f[k]) : f[k] === v);
+    const fxCanvas = $("fx");
+    const fxCtx = fxCanvas.getContext("2d");
+    const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const PALETTE = ["#ffb319", "#3346ff", "#ff5a4d", "#7df9ff", "#ffffff", "#22a06b"];
+    let parts = [];
+    let fxRunning = false;
+
+    function fxSize() {
+      const d = Math.min(window.devicePixelRatio || 1, 2);
+      fxCanvas.width = Math.round(innerWidth * d);
+      fxCanvas.height = Math.round(innerHeight * d);
+      fxCtx.setTransform(d, 0, 0, d, 0, 0);
     }
+    addEventListener("resize", fxSize);
+    fxSize();
 
-    function flipThumb(key) {
-      return key.slice(0, 1) + (key[1] === "1" ? "0" : "1") + key.slice(2);
-    }
-
-    const rulesOf = (k) => gestureDictionary[k] || [];
-
-    function lookupGesture(f) {
-      const keys = [f.key];
-      if (f.touch !== "none") keys.push(flipThumb(f.key));
-
-      for (const r of rulesOf("*")) if (r.when && matches(r.when, f)) return r;
-      for (const k of keys) {
-        for (const r of rulesOf(k)) if (r.when && matches(r.when, f)) return r;
+    function burst(x, y, o = {}) {
+      if (REDUCED || !settings.particles) return;
+      const { count = 18, power = 6, colors = PALETTE, gravity = 0.18, life = 900,
+              shape = "dot", spread = Math.PI * 2, angle = -Math.PI / 2, size = 4 } = o;
+      const now = performance.now();
+      for (let i = 0; i < count; i++) {
+        const a = angle + (Math.random() - 0.5) * spread;
+        const v = power * (0.35 + Math.random() * 0.85);
+        parts.push({
+          x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: gravity, born: now,
+          life: life * (0.7 + Math.random() * 0.6), c: colors[(Math.random() * colors.length) | 0],
+          s: size * (0.6 + Math.random() * 0.8), shape, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3
+        });
       }
-      for (const r of rulesOf(f.key)) if (!r.when) return r;
-      return null;
+      if (parts.length > 700) parts.splice(0, parts.length - 700);
+      if (!fxRunning) { fxRunning = true; requestAnimationFrame(fxLoop); }
     }
 
-    // ------------------------------------------------------------------
-    // Two-hand features and lookup
-    // ------------------------------------------------------------------
-    // "left" / "right" are the two hands as you see them on screen (mirrored view),
-    // so "left" is your left hand when your arms are not crossed.
-    function pairFeatures(h0, h1, pairMotion = "none", sayA = null, sayB = null) {
-      const a = h0.sample, b = h1.sample;
-      sayA = sayA ?? (h0.rule ? h0.rule.say : null);
-      sayB = sayB ?? (h1.rule ? h1.rule.say : null);
-      const aIsLeft = a.palm.x <= b.palm.x;
-      const left = aIsLeft ? sayA : sayB;
-      const right = aIsLeft ? sayB : sayA;
-      const S = (a.scale + b.scale) / 2 || 1;
-      const d = Math.hypot(a.palm.x - b.palm.x, a.palm.y - b.palm.y) / S;
-      const P = CONFIG.pair;
-      const gap = d < P.gapOverlap ? "overlap" : d < P.gapNear ? "near" : "far";
-      const dy = (a.palm.y - b.palm.y) / S;           // negative: hand A is higher
-      let above = "level";
-      if (dy < -0.5) above = aIsLeft ? "left" : "right";
-      else if (dy > 0.5) above = aIsLeft ? "right" : "left";
-      return { left, right, gap, above, pairMotion };
-    }
-
-    function matchesPair(rule, pf) {
-      const when = rule.when || {};
-      if (matches(when, pf)) return true;
-      if (rule.sym === false) return false;
-      const swapped = { ...pf, left: pf.right, right: pf.left,
-        above: pf.above === "left" ? "right" : pf.above === "right" ? "left" : "level" };
-      return matches(when, swapped);
-    }
-
-    function lookupPairStatic(pf) {
-      for (const r of gestureDictionary.pairs) {
-        if (r.when && !r.when.pairMotion && matchesPair(r, pf)) return r;
+    function fxLoop() {
+      const now = performance.now();
+      fxCtx.clearRect(0, 0, innerWidth, innerHeight);
+      parts = parts.filter(p => now - p.born < p.life);
+      for (const p of parts) {
+        p.vx *= 0.985;
+        p.vy = p.vy * 0.985 + p.g;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+        fxCtx.globalAlpha = Math.max(0, 1 - (now - p.born) / p.life);
+        fxCtx.fillStyle = p.c;
+        if (p.shape === "rect") {
+          fxCtx.save();
+          fxCtx.translate(p.x, p.y);
+          fxCtx.rotate(p.rot);
+          fxCtx.fillRect(-p.s, -p.s / 2, p.s * 2, p.s);
+          fxCtx.restore();
+        } else {
+          fxCtx.beginPath();
+          fxCtx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+          fxCtx.fill();
+        }
       }
-      return null;
+      fxCtx.globalAlpha = 1;
+      if (parts.length) requestAnimationFrame(fxLoop);
+      else { fxRunning = false; fxCtx.clearRect(0, 0, innerWidth, innerHeight); }
     }
 
-    function lookupPairMotion(pf) {
-      for (const r of gestureDictionary.pairs) {
-        if (r.when && r.when.pairMotion && matchesPair(r, pf)) return r;
+    function confetti() {
+      for (let i = 0; i < 7; i++) {
+        burst(innerWidth * (0.06 + 0.147 * i), -10,
+          { count: 32, power: 5, angle: Math.PI / 2, spread: 1.3, gravity: 0.12, life: 2800, shape: "rect", size: 5 });
       }
-      return null;
+    }
+
+    function floatText(x, y, text) {
+      if (REDUCED) return;
+      const el = document.createElement("div");
+      el.className = "float";
+      el.textContent = text;
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      stageEl.appendChild(el);
+      const kill = () => el.remove();
+      el.addEventListener("animationend", kill);
+      setTimeout(kill, 1500);
+    }
+
+    // where on screen a hand's palm is (the video is mirrored and cropped by object-fit: cover)
+    const videoDims = { w: 640, h: 480 };
+    function palmToScreen(h) {
+      const p = h.lastPalm, r = containerEl.getBoundingClientRect();
+      const s = Math.max(r.width / videoDims.w, r.height / videoDims.h);
+      const dw = videoDims.w * s, dh = videoDims.h * s;
+      const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
+      return { x: r.left + r.width - (ox + p.x * dw), y: r.top + oy + p.y * dh };
+    }
+    let leadHand = null;
+    function burstOrigin() {
+      if (leadHand && leadHand.present && leadHand.lastPalm) return palmToScreen(leadHand);
+      const r = containerEl.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height * 0.6 };
     }
 
     // ------------------------------------------------------------------
@@ -766,10 +1345,12 @@
     // ------------------------------------------------------------------
     const sentence = { words: [], spelling: "", lastSpellAt: 0 };
 
-    function flushSpelling() {
+    function flushSpelling(sayIt = true) {
       if (sentence.spelling) {
-        sentence.words.push({ text: sentence.spelling, kind: "spelled" });
+        const word = sentence.spelling;
+        sentence.words.push({ text: word, kind: "spelled" });
         sentence.spelling = "";
+        if (sayIt && settings.autoSpeak) speak(word.toLowerCase(), true);
       }
     }
 
@@ -808,17 +1389,29 @@
       $("btn-copy").disabled = empty;
       $("btn-back").disabled = empty;
       $("btn-clear").disabled = empty;
+      updateSuggestions();
     }
 
     function addToken(rule) {
+      const origin = burstOrigin();
+      if (game.active) {
+        if (game.mode !== "teach") gameOnSign(rule, origin);
+        return;
+      }
+
       if (rule.kind === "letter" || rule.kind === "number") {
         sentence.spelling += rule.say;
         sentence.lastSpellAt = performance.now();
         renderSentence();
+        sfx.letter();
+        burst(origin.x, origin.y, { count: 14, power: 4.5, life: 650, colors: ["#ffb319", "#ffffff", "#ffd36b"] });
       } else {
         flushSpelling();
         sentence.words.push({ text: rule.say, kind: "word" });
         renderSentence(true);
+        sfx.word();
+        burst(origin.x, origin.y, { count: 30, power: 7.5, life: 950 });
+        if (settings.autoSpeak) speak(rule.say, true);
       }
       ringEl.classList.remove("flash");
       void ringEl.offsetWidth;
@@ -836,12 +1429,12 @@
     $("btn-back").addEventListener("click", undoToken);
     $("btn-clear").addEventListener("click", () => { sentence.words = []; sentence.spelling = ""; renderSentence(); });
     $("btn-speak").addEventListener("click", () => {
-      flushSpelling();
+      flushSpelling(false);
       renderSentence();
       const text = composeText();
       if (!text || !("speechSynthesis" in window)) return;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+      speak(text);
+      addHistory(text);
     });
     $("btn-copy").addEventListener("click", async () => {
       const btn = $("btn-copy");
@@ -853,13 +1446,6 @@
       }
       setTimeout(() => { btn.textContent = "Copy"; }, 1200);
     });
-    document.addEventListener("keydown", (e) => {
-      const onButton = e.target instanceof HTMLElement && e.target.tagName === "BUTTON";
-      if (e.key === "Backspace") { e.preventDefault(); undoToken(); }
-      else if (e.key === "Escape") $("btn-clear").click();
-      else if (e.key === "Enter" && !onButton) $("btn-speak").click();
-      else if (e.key === " " && !onButton) { e.preventDefault(); flushSpelling(); renderSentence(); }
-    });
     setInterval(() => {
       if (sentence.spelling && performance.now() - sentence.lastSpellAt > CONFIG.hold.wordGapMs) {
         flushSpelling();
@@ -868,41 +1454,151 @@
     }, 300);
 
     // ------------------------------------------------------------------
+    // Word suggestions while spelling
+    // ------------------------------------------------------------------
+    const WORDS = [...new Set((
+      "the i you to and a it is my me we hello hi yes no please thank thanks sorry help good bad love " +
+      "friend friends family mom dad home school class teacher student water food eat drink hungry thirsty " +
+      "happy sad tired sick angry name what where when who why how can want need like go come stop wait " +
+      "more done finish again now later today tomorrow yesterday morning afternoon evening night day time " +
+      "work play book read write learn sign language deaf hear see look talk call phone number okay fine " +
+      "nice great cool fun game ball team win bus car walk run sit stand open close bathroom toilet doctor " +
+      "hospital emergency pain hurt medicine money buy shop big small hot cold new old man woman boy girl " +
+      "baby brother sister people person computer project idea question answer understand know think feel " +
+      "remember forget maybe sure really very much many some all this that here there with for of in on at " +
+      "from your his her our their they he she bye welcome birthday party music movie tea coffee bread " +
+      "apple milk juice dog cat house room door window table chair bed city country world"
+    ).split(" "))];
+    let suggestions = [];
+
+    function updateSuggestions() {
+      const box = $("suggest"), chips = $("suggest-chips");
+      const pre = sentence.spelling.toLowerCase();
+      suggestions = (!settings.suggest || game.active || !pre || /\d/.test(pre))
+        ? [] : WORDS.filter(w => w.length > pre.length && w.startsWith(pre)).slice(0, 3);
+      box.hidden = !suggestions.length;
+      chips.textContent = "";
+      suggestions.forEach((w, i) => {
+        const b = document.createElement("button");
+        if (i === 0) {
+          const k = document.createElement("kbd");
+          k.textContent = "Tab";
+          b.append(k);
+        }
+        b.append(document.createTextNode(w));
+        b.addEventListener("click", () => acceptSuggestion(i));
+        chips.appendChild(b);
+      });
+    }
+
+    function acceptSuggestion(i) {
+      const word = suggestions[i];
+      if (!word) return;
+      sentence.spelling = "";
+      sentence.words.push({ text: word, kind: "word" });
+      renderSentence(true);
+      sfx.word();
+      if (settings.autoSpeak) speak(word, true);
+    }
+
+    // ------------------------------------------------------------------
+    // History of spoken sentences
+    // ------------------------------------------------------------------
+    let history = store.get("dotacs.history", []);
+    function addHistory(text) {
+      if (history[0] && history[0].text === text && Date.now() - history[0].at < 5000) return;
+      history.unshift({ text, at: Date.now() });
+      history = history.slice(0, 60);
+      store.set("dotacs.history", history);
+      if (guideTab === "history") renderGuide();
+    }
+    function download(name, text, type = "text/plain") {
+      const blob = new Blob([text], { type });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    $("hist-clear").addEventListener("click", () => {
+      history = [];
+      store.set("dotacs.history", history);
+      renderGuide();
+    });
+    $("hist-download").addEventListener("click", () => {
+      if (!history.length) return;
+      const lines = history.slice().reverse().map(e => `[${new Date(e.at).toLocaleString()}] ${e.text}`);
+      download("dotacs-transcript.txt", lines.join("\n") + "\n");
+    });
+
+    function renderHistory() {
+      if (!history.length) {
+        const p = document.createElement("p");
+        p.className = "empty";
+        p.textContent = "Sentences you speak will show up here.";
+        guideBody.appendChild(p);
+        return;
+      }
+      for (const entry of history) {
+        const row = document.createElement("div");
+        row.className = "hist";
+        const t = document.createElement("time");
+        t.textContent = new Date(entry.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const txt = document.createElement("span");
+        txt.className = "txt";
+        txt.textContent = entry.text;
+        const b = document.createElement("button");
+        b.className = "mini";
+        b.textContent = "Say";
+        b.addEventListener("click", () => speak(entry.text));
+        row.append(t, txt, b);
+        guideBody.appendChild(row);
+      }
+    }
+
+    // ------------------------------------------------------------------
     // Sign guide
     // ------------------------------------------------------------------
     let guideTab = "letters";
+    let guideQuery = "";
     let guideItems = [];
 
     function buildGuide() {
-      const seen = new Set();
-      const items = [];
-      const push = (r, how, pair = false) => {
-        const id = (pair ? "pair:" : "") + how + ":" + r.say;
-        if (seen.has(id)) return;
-        seen.add(id);
-        items.push({ say: r.say, kind: r.kind, hint: r.hint || r.label, how, pair });
-      };
-      for (const [k, list] of Object.entries(gestureDictionary)) {
-        if (!RESERVED.has(k)) list.forEach(r => push(r, "hold"));
-      }
-      gestureDictionary.motions.forEach(r => push(r, "motion"));
-      gestureDictionary.pairs.forEach(r => push(r, r.when && r.when.pairMotion ? "motion" : "hold", true));
-      guideItems = items;
+      guideItems = engine.guideItems();
       renderGuide();
+      renderPool();
     }
 
     function renderGuide() {
       guideBody.textContent = "";
+      const isHist = guideTab === "history";
       $("legend").hidden = guideTab !== "words";
-      const list = guideItems.filter(i => guideTab === "letters" ? i.kind !== "word" : i.kind === "word");
+      $("search-wrap").hidden = isHist;
+      $("hist-foot").hidden = !isHist;
+      guideBody.classList.toggle("list", isHist);
+      if (isHist) { renderHistory(); return; }
+
+      const q = guideQuery.trim().toLowerCase();
+      const list = guideItems
+        .filter(i => guideTab === "letters" ? i.kind !== "word" : i.kind === "word")
+        .filter(i => !q || i.say.toLowerCase().includes(q) || (i.hint || "").toLowerCase().includes(q));
       if (guideTab === "letters") {
         list.sort((a, b) => (a.kind === b.kind
           ? a.say.localeCompare(b.say, undefined, { numeric: true })
           : a.kind === "letter" ? -1 : 1));
       }
+      if (!list.length) {
+        const p = document.createElement("p");
+        p.className = "empty";
+        p.textContent = guideItems.length ? "No sign matches that search." : "Loading signs...";
+        guideBody.appendChild(p);
+        return;
+      }
       for (const item of list) {
-        const tile = document.createElement("div");
-        tile.className = "tile" + (item.pair ? " pair" : item.how === "motion" ? " motion" : "");
+        const tile = document.createElement("button");
+        const taught = !item.pair && model.has(item.say);
+        tile.className = "tile" + (item.pair ? " pair" : item.how === "motion" ? " motion" : "") + (taught ? " taught" : "");
+        tile.title = taught ? "You taught this sign. Click to practise it." : "Practise this sign";
         if (item.how === "motion") tile.dataset.motion = "1";
         tile.dataset.say = item.say;
         const glyph = document.createElement("span");
@@ -912,8 +1608,10 @@
         how.className = "how";
         how.textContent = item.hint;
         tile.append(glyph, how);
+        tile.addEventListener("click", () => { tile.blur(); startDrill(item); });
         guideBody.appendChild(tile);
       }
+      markLive(shownRule ? shownRule.say : null);
     }
 
     document.querySelectorAll(".tabs button").forEach(btn => {
@@ -923,6 +1621,7 @@
         renderGuide();
       });
     });
+    $("guide-search").addEventListener("input", (e) => { guideQuery = e.target.value; renderGuide(); });
 
     function markLive(say) {
       guideBody.querySelectorAll(".tile.live").forEach(el => el.classList.remove("live"));
@@ -933,32 +1632,43 @@
     }
 
     // ------------------------------------------------------------------
-    // Readout: debounced static gesture
+    // Readout (the engine already smooths and debounces; this adds a short settle)
     // ------------------------------------------------------------------
     let shownState = null;
     let shownRule = null;
     let pendingState = null;
     let pendingCount = 0;
-    let lastLoggedKey = "";
-    let lastDebugTime = 0;
+    let shownConf = 0;
 
     function render(state, rule) {
       textOutput.innerText = state;
       textOutput.dataset.state = state === NOHAND ? "none" : state === UNKNOWN ? "unknown" : "ok";
       markLive(rule ? rule.say : null);
+      signChip.hidden = !rule;
     }
 
     function commit(state, rule, immediate = false) {
-      if (state === shownState) { pendingState = null; pendingCount = 0; return; }
+      if (state === shownState) { pendingState = null; pendingCount = 0; shownRule = rule || shownRule; return; }
       if (state !== pendingState) { pendingState = state; pendingCount = 1; }
       else pendingCount++;
-      if (immediate || shownState === null || pendingCount >= CONFIG.stableFrames) {
+      if (immediate || shownState === null || pendingCount >= 2) {
         shownState = state;
         shownRule = rule;
         pendingState = null;
         pendingCount = 0;
         render(state, rule);
       }
+    }
+
+    function showConf(conf, visible) {
+      const el = $("conf");
+      el.hidden = !visible;
+      if (!visible) return;
+      const pct = Math.round(clamp01(conf) * 100);
+      $("conf-bar").style.width = pct + "%";
+      $("conf-text").textContent = `${pct}% sure`;
+      el.dataset.level = conf < CONFIG.hold.minConf ? "low" : "ok";
+      if (shownRule) signChip.querySelector("span").textContent = `${shownRule.say} · ${pct}%`;
     }
 
     // ------------------------------------------------------------------
@@ -970,10 +1680,13 @@
     let lastHint = "";
     let suppressUntil = 0;
     const hold = { label: null, since: 0, committed: false, commitAt: 0 };
+    const holdVis = { progress: 0, done: false };
 
     function setRing(progress, done) {
       ringFg.style.strokeDashoffset = RING_C * (1 - clamp01(progress));
       ringEl.dataset.done = done ? "1" : "0";
+      holdVis.progress = clamp01(progress);
+      holdVis.done = done;
     }
     function setHint(text) {
       if (text !== lastHint) { lastHint = text; readoutHint.textContent = text; }
@@ -983,35 +1696,42 @@
       const H = CONFIG.hold;
       const rule = hasHand ? shownRule : null;
       const label = rule ? rule.label : null;
+      const teaching = game.active && game.mode === "teach";
+      const verb = game.active ? "answer with" : "add";
       if (label !== hold.label) { hold.label = label; hold.since = now; hold.committed = false; }
 
       let hint = "", progress = 0, done = false;
       if (!rule) {
         hold.committed = false;
+      } else if (teaching) {
+        hint = `Right now it looks like “${rule.say}”`;
       } else if (now < suppressUntil) {
         hold.since = now; hold.committed = false;
-        hint = "Motion sign recognised. Lower your hands to continue.";
+        hint = "Sign captured. Lower your hands to continue.";
       } else if (moving) {
         hold.since = now; hold.committed = false;
         hint = "Moving";
+      } else if (shownConf < H.minConf && !hold.committed) {
+        hold.since = now;
+        hint = `Not sure yet. Make the “${rule.say}” shape clearer.`;
       } else if (!hold.committed) {
         progress = (now - hold.since) / H.holdMs;
-        hint = `Hold to add \u201C${rule.say}\u201D`;
+        hint = `Hold to ${verb} “${rule.say}”`;
         if (progress >= 1) {
           addToken(rule);
           hold.committed = true;
           hold.commitAt = now;
           progress = 1; done = true;
-          hint = `Added \u201C${rule.say}\u201D`;
+          hint = game.active ? `Answered “${rule.say}”` : `Added “${rule.say}”`;
         }
       } else {
         done = true;
         if (rule.kind !== "word") {
-          hint = `Added \u201C${rule.say}\u201D. Keep holding to type it again.`;
+          hint = `Added “${rule.say}”. Keep holding to type it again.`;
           progress = (now - hold.commitAt) / H.repeatMs;
           if (progress >= 1) { addToken(rule); hold.commitAt = now; progress = 0; }
         } else {
-          hint = `Added \u201C${rule.say}\u201D`;
+          hint = `Added “${rule.say}”`;
           progress = 1;
         }
       }
@@ -1019,412 +1739,620 @@
       setHint(hint);
     }
 
-    // ------------------------------------------------------------------
-    // One-hand motion tracking (runs for each hand)
-    // ------------------------------------------------------------------
-    const M = CONFIG.motion;
-    let lastEvent = { label: null, t: 0 };
-
-    const palmCenter = (I) => {
-      const ids = [0, 5, 9, 13, 17];
-      return { x: ids.reduce((a, i) => a + I[i].x, 0) / 5, y: ids.reduce((a, i) => a + I[i].y, 0) / 5 };
-    };
-
-    function pushSample(h, now, I, vw, vh, say, features) {
-      const pc = palmCenter(I);
-      const scalePx = Math.hypot((I[0].x - I[9].x) * vw, (I[0].y - I[9].y) * vh) || 1;
-      h.scaleEma = h.scaleEma ? h.scaleEma + 0.1 * (scalePx - h.scaleEma) : scalePx;
-
-      // the fingertip that is "writing" (for J and Z), used for the trail too
-      const tipId = (features.ext.pinky && !features.ext.index) ? 20 : features.ext.index ? 8 : null;
-      const tip = tipId ? I[tipId] : pc;
-      const sc = features._scores;
-      const sample = {
-        t: now,
-        scale: h.scaleEma,
-        // display coordinates (mirrored so "right" is the user's right on screen)
-        palm:  { x: (1 - pc.x) * vw, y: pc.y * vh },
-        index: { x: (1 - I[8].x) * vw, y: I[8].y * vh },
-        pinky: { x: (1 - I[20].x) * vw, y: I[20].y * vh },
-        trail: { x: tip.x, y: tip.y },   // raw normalised, for drawing
-        say,
-        fingers: [sc.index, sc.middle, sc.ring, sc.pinky]
-      };
-      h.buffer.push(sample);
-      while (h.buffer.length && now - h.buffer[0].t > 3500) h.buffer.shift();
-      return sample;
-    }
-
-    function updateSpeed(h) {
-      const buf = h.buffer;
-      const n = buf.length;
-      if (n < 2) return h.speedEma;
-      const cur = buf[n - 1];
-      let ref = buf[0];
-      for (let i = n - 2; i >= 0; i--) {
-        ref = buf[i];
-        if (cur.t - buf[i].t >= 100) break;
-      }
-      const dt = (cur.t - ref.t) / 1000;
-      const raw = dt < 0.03 ? 0 : Math.hypot(cur.palm.x - ref.palm.x, cur.palm.y - ref.palm.y) / cur.scale / dt;
-      h.speedEma += 0.5 * (raw - h.speedEma);
-      return h.speedEma;
-    }
-
-    function resetMotion(h) {
-      h.motion.active = false;
-      h.motion.samples = [];
-      h.motion.stillSince = null;
-      h.motion.startCount = 0;
-    }
-
-    function updateMotion(h, now, sample, speed) {
-      const m = h.motion;
-      if (!m.active) {
-        m.startCount = speed > M.startSpeed ? m.startCount + 1 : 0;
-        if (m.startCount >= 2) {
-          m.active = true;
-          m.stillSince = null;
-          m.samples = h.buffer.filter(s => s.t >= now - 250);
-        }
-        return;
-      }
-      m.samples.push(sample);
-      if (speed < M.stopSpeed) {
-        if (m.stillSince === null) m.stillSince = now;
-        else if (now - m.stillSince > M.stopMs) finishMotion(h);
-      } else {
-        m.stillSince = null;
-      }
-      if (m.active && now - m.samples[0].t > M.maxMs) finishMotion(h);
-    }
-
-    function finishMotion(h) {
-      const m = h.motion;
-      if (!m.samples.length) { resetMotion(h); return; }
-      const endT = m.stillSince ?? m.samples[m.samples.length - 1].t;
-      const segment = m.samples.filter(s => s.t <= endT);
-      resetMotion(h);
-      const mf = analyzeMotion(segment);
-      if (!mf) return;
-      const rule = findMotionRule(mf, segment);
-      if (DEBUG) console.log("hand", h.id, "motion", JSON.stringify(mf), "->", rule ? rule.label : "no match");
-      if (rule) emitRule(rule, h);
-    }
-
-    // Fires a recognised motion sign. A one-hand sign is dropped if the other hand has
-    // been moving too (that is the two-hand motion detector's job).
-    function emitRule(rule, h = null) {
+    // a motion or two-hand sign the engine recognised
+    function onEngineEvent(ev) {
       const now = performance.now();
-      if (h && hands.some(o => o !== h && o.active && now - o.lastMovingAt < 500)) return;
-      if (rule.label === lastEvent.label && now - lastEvent.t < M.repeatBlockMs) { lastEvent.t = now; return; }
-      lastEvent = { label: rule.label, t: now };
       suppressUntil = now + CONFIG.hold.afterMotionMs;
-      motionToast.textContent = rule.say;
+      motionToast.textContent = ev.rule.say;
       motionToast.classList.remove("show");
       void motionToast.offsetWidth;
       motionToast.classList.add("show");
-      addToken(rule);
+      addToken(ev.rule);
     }
 
-    // ----- path analysis -----
-    function countSwings(vals, minAmp) {
-      let lastExt = vals[0], dir = 0, count = 0;
-      for (const v of vals) {
-        if (dir === 0) {
-          if (v - lastExt > minAmp) { dir = 1; lastExt = v; }
-          else if (lastExt - v > minAmp) { dir = -1; lastExt = v; }
-        } else if (dir === 1) {
-          if (v > lastExt) lastExt = v;
-          else if (lastExt - v > minAmp) { count++; dir = -1; lastExt = v; }
+    // ------------------------------------------------------------------
+    // Practice challenge: a timed round, or a single-sign drill from the guide
+    // ------------------------------------------------------------------
+    const game = {
+      active: false, mode: "timed", pool: store.get("dotacs.pool", "letters"), phase: "intro",
+      target: null, targetAt: 0, locked: false, lastHit: null,
+      score: 0, streak: 0, bestStreak: 0, solved: 0,
+      endsAt: 0, interval: null, cdTimer: null, lastSecond: null
+    };
+    const challengeEl = $("challenge");
+    const targetEl = $("ch-target");
+    const chFeedback = $("ch-feedback");
+    const bestKey = () => "dotacs.best." + game.pool;
+
+    function poolItems(pool = game.pool) {
+      return guideItems.filter(i => pool === "all" || (pool === "words" ? i.kind === "word" : i.kind !== "word"));
+    }
+
+    function renderPool() {
+      document.querySelectorAll("#ch-pool button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.pool === game.pool)));
+      $("ch-meta").textContent = `${poolItems().length} signs · best ${store.get(bestKey(), 0)}`;
+    }
+    document.querySelectorAll("#ch-pool button").forEach(b => b.addEventListener("click", () => {
+      game.pool = b.dataset.pool;
+      store.set("dotacs.pool", game.pool);
+      renderPool();
+    }));
+
+    function clearGameTimers() {
+      clearInterval(game.interval);
+      clearTimeout(game.cdTimer);
+      game.interval = null;
+      game.cdTimer = null;
+    }
+
+    function enterGame() {
+      game.active = true;
+      stageEl.classList.add("gaming");
+      updateSuggestions();
+      if (innerWidth < 980) stageEl.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" });
+    }
+
+    function setModeButtons() {
+      $("btn-practice").setAttribute("aria-pressed", String(game.active && game.mode !== "teach"));
+      $("btn-teach").setAttribute("aria-pressed", String(game.active && game.mode === "teach"));
+    }
+
+    function openGame() {
+      if (!guideItems.length) return;
+      clearGameTimers();
+      teach.active = false;
+      enterGame();
+      game.mode = "timed";
+      showPhase("intro");
+      renderPool();
+      $("ch-start").focus({ preventScroll: true });
+    }
+
+    function closeGame() {
+      clearGameTimers();
+      teach.active = false;
+      game.active = false;
+      game.phase = "intro";
+      game.target = null;
+      stageEl.classList.remove("gaming");
+      challengeEl.hidden = true;
+      setModeButtons();
+      renderSentence();
+    }
+
+    const PANELS = { intro: "ch-intro", play: "ch-play", countdown: "ch-play", over: "ch-over", teachIntro: "tc-intro", teach: "tc-run" };
+    function showPhase(ph) {
+      game.phase = ph;
+      challengeEl.hidden = false;
+      for (const id of new Set(Object.values(PANELS))) $(id).hidden = id !== PANELS[ph];
+      $("ch-timebar").hidden = game.mode !== "timed";
+      $("ch-skip").textContent = game.mode === "drill" ? "Another sign (S)" : "Skip (S)";
+      const canTeach = game.mode === "drill" && game.target && teachable(game.target);
+      $("ch-teach-one").hidden = !canTeach;
+      if (canTeach) $("ch-teach-one").textContent = model.has(game.target.say) ? "Teach it again" : "Teach it this sign";
+      setModeButtons();
+    }
+
+    function updateStats() {
+      $("stat-score-label").textContent = game.mode === "drill" ? "Reps" : "Score";
+      $("stat-score").textContent = game.mode === "drill" ? game.solved : game.score;
+      $("stat-streak").textContent = game.streak;
+    }
+
+    function tagFor(item) {
+      if (item.pair) return item.how === "motion" ? "Two hands, moving" : "Two hands";
+      return item.how === "motion" ? "Motion sign" : "Hold still";
+    }
+
+    function setTarget(item) {
+      game.target = item;
+      game.targetAt = performance.now();
+      game.locked = false;
+      targetEl.textContent = item.say;
+      targetEl.className = "target" + (item.kind === "word" ? " word" : "");
+      $("ch-tag").textContent = tagFor(item);
+      $("ch-hint").textContent = item.hint;
+      chFeedback.textContent = "";
+    }
+
+    function nextTarget() {
+      const items = game.mode === "drill"
+        ? poolItems(game.target && game.target.kind === "word" ? "words" : "letters")
+        : poolItems();
+      const choices = items.filter(i => !game.target || i.say !== game.target.say);
+      const pick = choices[(Math.random() * choices.length) | 0] || items[0];
+      if (pick) setTarget(pick);
+      if (game.mode === "drill") showPhase("play");
+    }
+
+    function startRound() {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      clearGameTimers();
+      game.mode = "timed";
+      game.score = 0; game.streak = 0; game.bestStreak = 0; game.solved = 0;
+      game.target = null;
+      game.lastSecond = null;
+      updateStats();
+      showPhase("countdown");
+      $("ch-timebar-fill").style.transform = "scaleX(1)";
+      $("ch-timebar").classList.remove("low");
+      $("ch-tag").textContent = "";
+      $("ch-hint").textContent = "Get your hand ready...";
+      chFeedback.textContent = "";
+      let n = 3;
+      const step = () => {
+        if (!game.active) return;
+        if (n > 0) {
+          targetEl.textContent = n;
+          targetEl.className = "target count";
+          sfx.tick();
+          n--;
+          game.cdTimer = setTimeout(step, 700);
         } else {
-          if (v < lastExt) lastExt = v;
-          else if (v - lastExt > minAmp) { count++; dir = 1; lastExt = v; }
+          targetEl.textContent = "Go!";
+          targetEl.className = "target word count";
+          sfx.word();
+          game.cdTimer = setTimeout(() => {
+            game.endsAt = performance.now() + CONFIG.game.roundMs;
+            showPhase("play");
+            nextTarget();
+            game.interval = setInterval(tickTimer, 100);
+          }, 450);
         }
+      };
+      step();
+    }
+
+    function tickTimer() {
+      const left = game.endsAt - performance.now();
+      $("ch-timebar-fill").style.transform = `scaleX(${clamp01(left / CONFIG.game.roundMs)})`;
+      const sec = Math.ceil(left / 1000);
+      $("ch-timebar").classList.toggle("low", sec <= 10);
+      if (sec <= 5 && sec > 0 && sec !== game.lastSecond) { game.lastSecond = sec; sfx.tick(); }
+      if (left <= 0) endRound();
+    }
+
+    function endRound() {
+      clearGameTimers();
+      const best = store.get(bestKey(), 0);
+      const isBest = game.score > best;
+      if (isBest) store.set(bestKey(), game.score);
+      showPhase("over");
+      $("ov-score").textContent = game.score;
+      $("ov-detail").textContent = `${game.solved} sign${game.solved === 1 ? "" : "s"} · best streak ${game.bestStreak}`;
+      const ob = $("ov-best");
+      ob.textContent = isBest ? "New personal best!" : `Your best: ${best}`;
+      ob.dataset.best = isBest ? "1" : "0";
+      if (isBest) { sfx.best(); confetti(); } else sfx.end();
+      $("ch-again").focus({ preventScroll: true });
+    }
+
+    function skipTarget() {
+      if (game.phase !== "play") return;
+      if (game.mode === "timed") game.streak = 0;
+      updateStats();
+      sfx.tick();
+      nextTarget();
+    }
+
+    function startDrill(item) {
+      if (game.active && game.mode === "timed" && (game.phase === "play" || game.phase === "countdown")) return;
+      if (game.active && game.mode === "teach" && game.phase === "teach") return;
+      clearGameTimers();
+      teach.active = false;
+      enterGame();
+      game.mode = "drill";
+      game.solved = 0; game.streak = 0; game.score = 0;
+      setTarget(item);
+      showPhase("play");
+      updateStats();
+    }
+
+    function gameOnSign(rule, pos) {
+      if (game.phase !== "play" || !game.target || game.locked) return;
+      const now = performance.now();
+      const ok = rule.say.toLowerCase() === game.target.say.toLowerCase();
+      if (!ok) {
+        // holding the previous answer a bit too long is not a mistake
+        if (game.lastHit && game.lastHit.say === rule.say && now - game.lastHit.t < 2500) return;
+        chFeedback.dataset.tone = "miss";
+        chFeedback.textContent = teachable(game.target)
+          ? `That was “${rule.say}”. If you are sure your sign is right, teach it this sign.`
+          : `That was “${rule.say}”. Look at the hint and try again.`;
+        sfx.miss();
+        return;
       }
-      return count;
-    }
-
-    function circleInfo(pts) {
-      const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
-      const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
-      let prev = Math.atan2(pts[0].y - cy, pts[0].x - cx), total = 0, r = 0;
-      for (let i = 0; i < pts.length; i++) {
-        const a = Math.atan2(pts[i].y - cy, pts[i].x - cx);
-        let d = a - prev;
-        while (d > Math.PI) d -= 2 * Math.PI;
-        while (d < -Math.PI) d += 2 * Math.PI;
-        total += d;
-        prev = a;
-        r += Math.hypot(pts[i].x - cx, pts[i].y - cy);
+      const secs = (now - game.targetAt) / 1000;
+      game.lastHit = { say: rule.say, t: now };
+      game.streak++;
+      game.bestStreak = Math.max(game.bestStreak, game.streak);
+      game.solved++;
+      let pts = 0;
+      if (game.mode === "timed") {
+        pts = 100 + Math.min(game.streak - 1, 10) * 20 + Math.max(0, Math.round(80 - secs * 16));
+        game.score += pts;
       }
-      return { turn: total, radius: r / pts.length };
-    }
-
-    function modeOf(samples, key) {
-      const tally = {};
-      for (const s of samples) if (s[key]) tally[s[key]] = (tally[s[key]] || 0) + 1;
-      return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    }
-
-    function analyzeMotion(samples) {
-      if (samples.length < 6) return null;
-      const dur = samples[samples.length - 1].t - samples[0].t;
-      if (dur < M.minMs) return null;
-
-      const S = samples.reduce((a, s) => a + s.scale, 0) / samples.length || 1;
-      const pts = samples.map(s => ({ x: s.palm.x / S, y: s.palm.y / S }));
-      const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
-      let L = 0;
-      for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-      const rangeX = range(xs);
-      const rangeY = range(ys);
-      const dx = pts[pts.length - 1].x - pts[0].x;
-      const dy = pts[pts.length - 1].y - pts[0].y;
-      const net = Math.hypot(dx, dy);
-      const swingsX = countSwings(xs, M.swingAmp);
-      const swingsY = countSwings(ys, M.swingAmp);
-
-      let kind = "other", spin = null;
-      if (L >= M.minPath) {
-        const circ = circleInfo(pts);
-        const aspect = Math.min(rangeX, rangeY) / Math.max(rangeX, rangeY, 1e-6);
-        if (Math.abs(circ.turn) >= M.minCircleTurn && circ.radius > 0.2 && aspect > 0.4) {
-          kind = "circle"; spin = circ.turn > 0 ? "cw" : "ccw";
-        } else if (swingsX >= 2 && rangeX >= 1.2 * rangeY) kind = "waveX";
-        else if (swingsY >= 2 && rangeY >= 1.2 * rangeX) kind = "shakeY";
-        else if (net >= M.minSwipe && net / L > 0.65) {
-          kind = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "swipeRight" : "swipeLeft") : (dy < 0 ? "swipeUp" : "swipeDown");
-        }
+      updateStats();
+      chFeedback.dataset.tone = "hit";
+      chFeedback.textContent = game.streak >= 3 ? `${game.streak} in a row!` : (secs < 2 ? "Lightning fast!" : "Nice!");
+      targetEl.classList.remove("hit");
+      void targetEl.offsetWidth;
+      targetEl.classList.add("hit");
+      sfx.success();
+      burst(pos.x, pos.y, { count: 44, power: 9, life: 1100 });
+      floatText(pos.x, pos.y - 30, game.mode === "timed" ? `+${pts}` : `×${game.solved}`);
+      if (game.mode === "timed") {
+        game.locked = true;
+        setTimeout(() => { if (game.active && game.phase === "play") nextTarget(); }, 450);
+      } else if (game.streak % 5 === 0) {
+        confetti();
       }
-
-      return { motion: kind, spin, hand: modeOf(samples, "say"), flap: "none", path: +L.toFixed(2), swingsX, swingsY };
     }
 
-    // ----- path templates (J, Z): resample, normalise, compare -----
-    const pathLen = (pts) => {
-      let l = 0;
-      for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-      return l;
+    $("btn-practice").addEventListener("click", () => (game.active && game.mode !== "teach" ? closeGame() : openGame()));
+    $("ch-start").addEventListener("click", startRound);
+    $("ch-again").addEventListener("click", startRound);
+    $("ch-skip").addEventListener("click", skipTarget);
+    $("ch-teach-one").addEventListener("click", () => { if (game.target) startTeach([game.target], game.target); });
+    challengeEl.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeGame));
+
+    // ------------------------------------------------------------------
+    // Teach mode: record how this person makes each sign
+    // ------------------------------------------------------------------
+    const teach = {
+      active: false, list: [], i: 0, phase: "ready", phaseAt: 0, lastT: 0, captureMs: 0, vecs: [],
+      returnTo: null, pool: store.get("dotacs.teachPool", "letters"), taughtNow: 0
     };
 
-    function resample(pts, n) {
-      const total = pathLen(pts);
-      if (total === 0) return null;
-      const step = total / (n - 1);
-      const src = pts.slice();
-      const out = [src[0]];
-      let D = 0;
-      for (let i = 1; i < src.length; i++) {
-        const d = Math.hypot(src[i].x - src[i - 1].x, src[i].y - src[i - 1].y);
-        if (d > 0 && D + d >= step) {
-          const t = (step - D) / d;
-          const q = { x: src[i - 1].x + t * (src[i].x - src[i - 1].x), y: src[i - 1].y + t * (src[i].y - src[i - 1].y) };
-          out.push(q);
-          src.splice(i, 0, q);
-          D = 0;
-        } else D += d;
+    // one-hand signs only: two-hand signs are built from one-hand shapes, finger flaps need no teaching
+    function teachable(item) {
+      return item && !item.pair && !(item.rule && item.rule.when && item.rule.when.flap);
+    }
+    function teachItems(pool = teach.pool) {
+      const list = guideItems.filter(i => teachable(i) &&
+        (pool === "all" || (pool === "words" ? i.kind === "word" : i.kind !== "word")));
+      const order = (i) => (i.kind === "letter" ? 0 : i.kind === "number" ? 1 : 2);
+      return list.sort((a, b) => order(a) - order(b) || a.say.localeCompare(b.say, undefined, { numeric: true }));
+    }
+
+    function renderTeachIntro() {
+      document.querySelectorAll("#tc-pool button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.pool === teach.pool)));
+      const list = teachItems();
+      const done = list.filter(i => model.has(i.say)).length;
+      $("tc-meta").textContent = `${list.length} signs · ${done} taught`;
+      const box = $("tc-list");
+      box.textContent = "";
+      for (const i of list) {
+        const s = document.createElement("span");
+        s.textContent = i.say;
+        if (model.has(i.say)) s.className = "done";
+        box.appendChild(s);
       }
-      while (out.length < n) out.push(src[src.length - 1]);
-      return out.slice(0, n);
+    }
+    document.querySelectorAll("#tc-pool button").forEach(b => b.addEventListener("click", () => {
+      teach.pool = b.dataset.pool;
+      store.set("dotacs.teachPool", teach.pool);
+      renderTeachIntro();
+    }));
+
+    function openTeach() {
+      if (!guideItems.length) return;
+      clearGameTimers();
+      teach.active = false;
+      enterGame();
+      game.mode = "teach";
+      showPhase("teachIntro");
+      renderTeachIntro();
+      $("tc-start").focus({ preventScroll: true });
     }
 
-    function normalizePath(raw) {
-      const r = resample(raw, CONFIG.template.points);
-      if (!r) return null;
-      const cx = mean(r.map(p => p.x));
-      const cy = mean(r.map(p => p.y));
-      const s = Math.max(range(r.map(p => p.x)), range(r.map(p => p.y))) || 1;
-      return r.map(p => ({ x: (p.x - cx) / s, y: (p.y - cy) / s }));
+    function startTeach(list, returnTo = null) {
+      if (!list.length) return;
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      clearGameTimers();
+      enterGame();
+      game.mode = "teach";
+      teach.active = true;
+      teach.list = list;
+      teach.returnTo = returnTo;
+      teach.taughtNow = 0;
+      showPhase("teach");
+      teachStep(0);
     }
 
-    const pathDist = (a, b) => a.reduce((sum, p, i) => sum + Math.hypot(p.x - b[i].x, p.y - b[i].y), 0) / a.length;
-
-    function templateDistance(samples, rule) {
-      const raw = samples.map(s => s[rule.track || "palm"]);
-      const S = samples.reduce((a, s) => a + s.scale, 0) / samples.length || 1;
-      if (pathLen(raw) / S < 0.6) return Infinity;
-      const cand = normalizePath(raw);
-      if (!cand) return Infinity;
-      rule._tpl = rule._tpl || normalizePath(rule.path.map(([x, y]) => ({ x, y })));
-      let d = pathDist(cand, rule._tpl);
-      if (rule.mirrorOk !== false) {
-        d = Math.min(d, pathDist(cand, rule._tpl.map(p => ({ x: -p.x, y: p.y }))));
-      }
-      return d;
+    function teachStep(i) {
+      if (i >= teach.list.length) { teachDone(); return; }
+      teach.i = Math.max(0, i);
+      const item = teach.list[teach.i];
+      teach.phase = "ready";
+      teach.phaseAt = performance.now();
+      teach.vecs = [];
+      teach.captureMs = 0;
+      const t = $("tc-target");
+      t.textContent = item.say;
+      t.className = "target" + (item.kind === "word" ? " word" : "");
+      $("tc-step").textContent = item.how === "motion" ? "Motion sign" : "Hold still";
+      $("tc-hint").textContent = item.hint;
+      $("tc-count").textContent = `${teach.i + 1}/${teach.list.length}`;
+      $("tc-back").disabled = teach.i === 0;
+      setTeachSay("Get ready...", "");
+      $("tc-bar").style.transform = "scaleX(0)";
     }
 
-    function findMotionRule(mf, samples) {
-      let best = null, bestD = Infinity;
-      for (const r of gestureDictionary.motions) {
-        if (!r.path || !matches(r.when || {}, mf)) continue;
-        const d = templateDistance(samples, r);
-        if (DEBUG) console.log("template", r.label, d.toFixed(3));
-        if (d < (r.maxDist ?? CONFIG.template.maxDist) && d < bestD) { best = r; bestD = d; }
-      }
-      if (best) return best;
-      for (const r of gestureDictionary.motions) {
-        if (!r.path && r.when && matches(r.when, mf)) return r;
-      }
-      return null;
+    function setTeachSay(text, tone) {
+      const el = $("tc-say");
+      if (el.textContent !== text) el.textContent = text;
+      el.dataset.tone = tone || "";
     }
 
-    // ----- finger flapping (bye, come here) -----
-    function countCloses(vals, hi, lo) {
-      let state = null, closes = 0;
-      for (const v of vals) {
-        if (v >= hi) state = 1;
-        else if (v <= lo && state === 1) { closes++; state = 0; }
-      }
-      return closes;
+    function teachSaved(item) {
+      teach.phase = "saved";
+      teach.phaseAt = performance.now();
+      teach.taughtNow++;
+      saveModel();
+      setTeachSay("Got it!", "ok");
+      $("tc-bar").style.transform = "scaleX(1)";
+      const t = $("tc-target");
+      t.classList.remove("hit");
+      void t.offsetWidth;
+      t.classList.add("hit");
+      sfx.success();
+      const o = burstOrigin();
+      burst(o.x, o.y, { count: 36, power: 8, life: 1000 });
     }
 
-    function updateFlap(h, now, sample, speed) {
-      const F = CONFIG.flap;
-      h.fingerHist.push({ t: now, s: sample.fingers });
-      while (h.fingerHist.length && now - h.fingerHist[0].t > F.windowMs) h.fingerHist.shift();
-      if (now < h.flapCooldownUntil || h.motion.active || speed > F.maxSpeed || h.fingerHist.length < 12) return;
-
-      const closes = [0, 1, 2, 3].map(i => countCloses(h.fingerHist.map(x => x.s[i]), F.high, F.low));
-      const flapping = closes.map(c => c >= F.minCloses);
-      let flap = null;
-      if (flapping.every(Boolean)) flap = "all";
-      else if (flapping[0] && closes[1] < 1 && closes[2] < 1 && closes[3] < 1) flap = "index";
-      if (!flap) return;
-
-      h.fingerHist.length = 0;
-      h.flapCooldownUntil = now + F.cooldownMs;
-      const mf = { motion: "none", spin: null, hand: null, flap };
-      const rule = gestureDictionary.motions.find(r => !r.path && r.when && matches(r.when, mf));
-      if (DEBUG) console.log("hand", h.id, "flap", flap, "->", rule ? rule.label : "no match");
-      if (rule) emitRule(rule, h);
+    function teachDone() {
+      teach.active = false;
+      const n = teach.taughtNow;
+      game.phase = "intro";
+      if (teach.returnTo) { startDrill(teach.returnTo); return; }
+      showPhase("teachIntro");
+      renderTeachIntro();
+      $("tc-meta").textContent = n
+        ? `Done! ${n} sign${n === 1 ? "" : "s"} taught and saved in this browser.`
+        : $("tc-meta").textContent;
+      if (n >= 5) confetti();
     }
 
-    // ------------------------------------------------------------------
-    // Two-hand motion: 6-7 (alternating), clap, apart, together
-    // ------------------------------------------------------------------
-    const pair = { buf: [], cooldownUntil: 0 };
+    // called every video frame while teaching
+    function teachTick(now, out) {
+      if (!teach.active || game.mode !== "teach") return;
+      const C = CONFIG.teach;
+      const item = teach.list[teach.i];
+      const lead = out.lead && out.lead.present ? out.lead : null;
+      const bar = $("tc-bar");
 
-    function updatePair(now, h0, h1) {
-      const P = CONFIG.pair;
-      const a = h0.sample, b = h1.sample;
-      const S = (a.scale + b.scale) / 2 || 1;
-      pair.buf.push({
-        t: now,
-        d: Math.hypot(a.palm.x - b.palm.x, a.palm.y - b.palm.y) / S,
-        yA: a.palm.y / S,
-        yB: b.palm.y / S,
-        sA: h0.rule ? h0.rule.say : null,
-        sB: h1.rule ? h1.rule.say : null
-      });
-      while (pair.buf.length && now - pair.buf[0].t > 2500) pair.buf.shift();
-      if (now < pair.cooldownUntil) return;
-
-      const win = pair.buf.filter(s => s.t >= now - P.windowMs);
-      if (win.length < 15) return;
-      const yA = win.map(s => s.yA), yB = win.map(s => s.yB), d = win.map(s => s.d);
-
-      let kind = null;
-      if (range(yA) >= P.altRange && range(yB) >= P.altRange &&
-          countSwings(yA, P.altAmp) >= 2 && countSwings(yB, P.altAmp) >= 2 &&
-          correlation(yA, yB) < P.altCorr) {
-        kind = "alternate";
-      } else if (countSwings(d, P.clapAmp) >= 2 && range(d) >= P.clapRange) {
-        kind = "clap";
-      } else {
-        const recent = win.filter(s => s.t >= now - 700);
-        if (recent.length >= 8) {
-          const rd = recent.map(s => s.d);
-          const delta = rd[rd.length - 1] - rd[0];
-          if (Math.abs(delta) >= P.moveDelta && countSwings(rd, 0.4) === 0) kind = delta > 0 ? "apart" : "together";
+      if (teach.phase === "ready") {
+        const left = C.readyMs - (now - teach.phaseAt);
+        setTeachSay(lead ? `Get ready... ${Math.max(1, Math.ceil(left / 1000))}` : "Get ready... show your hand", "");
+        bar.style.transform = `scaleX(${clamp01(1 - left / C.readyMs) * 0.25})`;
+        if (left <= 0) {
+          teach.phase = "capture";
+          teach.phaseAt = now;
+          teach.lastT = now;
+          sfx.tick();
         }
-      }
-      if (!kind) return;
-
-      const pf = pairFeatures(h0, h1, kind, modeOf(win, "sA"), modeOf(win, "sB"));
-      const rule = lookupPairMotion(pf);
-      if (DEBUG) console.log("pair", kind, JSON.stringify(pf), "->", rule ? rule.label : "no match");
-      if (rule) {
-        pair.cooldownUntil = now + P.cooldownMs;
-        pair.buf.length = 0;
-        emitRule(rule);
+      } else if (teach.phase === "capture") {
+        if (item.how === "hold") {
+          const dt = now - teach.lastT;
+          teach.lastT = now;
+          if (lead && lead.features && lead.speed < 1.6) {
+            teach.captureMs += dt;
+            teach.vecs.push(lead.features.vec.slice());
+            setTeachSay("Hold it... tilt your hand a little", "");
+          } else {
+            setTeachSay("Show your hand to the camera", "warn");
+          }
+          bar.style.transform = `scaleX(${clamp01(teach.captureMs / C.captureMs)})`;
+          if (teach.captureMs >= C.captureMs) {
+            if (teach.vecs.length >= 15) {
+              model.addShape(item.say, teach.vecs);
+              teachSaved(item);
+            } else {
+              setTeachSay("I could not see your hand well. Again.", "warn");
+              teach.phase = "ready";
+              teach.phaseAt = now;
+              teach.vecs = [];
+              teach.captureMs = 0;
+            }
+          }
+        } else {
+          setTeachSay("Do the sign now", "");
+          bar.style.transform = `scaleX(${clamp01((now - teach.phaseAt) / C.motionWaitMs)})`;
+          const seg = out.segments.find(s => s.samples.length && s.samples[0].t >= teach.phaseAt - 400 &&
+            (!lead || s.hand === lead) && s.mf && s.mf.path >= 0.5);
+          if (seg) {
+            const tpl = motionTemplate(seg.samples, seg.shapeSay);
+            if (tpl) { model.addMotion(item.say, tpl); teachSaved(item); return; }
+          }
+          if (now - teach.phaseAt > C.motionWaitMs) {
+            setTeachSay("I did not see a movement. Again.", "warn");
+            teach.phase = "ready";
+            teach.phaseAt = now;
+          }
+        }
+      } else if (teach.phase === "saved") {
+        if (now - teach.phaseAt > C.savedMs) teachStep(teach.i + 1);
       }
     }
 
-    // ------------------------------------------------------------------
-    // Hand slots
-    // ------------------------------------------------------------------
-    function assignHands(dets) {
-      const result = [], takenHands = new Set(), usedDets = new Set();
-      const cand = [];
-      dets.forEach((d, i) => hands.forEach(h => {
-        if (h.active && h.lastPalm) cand.push({ i, h, dist: Math.hypot(d.pc.x - h.lastPalm.x, d.pc.y - h.lastPalm.y) });
-      }));
-      cand.sort((a, b) => a.dist - b.dist);
-      for (const c of cand) {
-        if (usedDets.has(c.i) || takenHands.has(c.h)) continue;
-        usedDets.add(c.i); takenHands.add(c.h);
-        result.push({ h: c.h, det: dets[c.i] });
+    $("btn-teach").addEventListener("click", () => (game.active && game.mode === "teach" ? closeGame() : openTeach()));
+    $("tc-start").addEventListener("click", () => startTeach(teachItems()));
+    $("tc-skip").addEventListener("click", () => teachStep(teach.i + 1));
+    $("tc-back").addEventListener("click", () => teachStep(teach.i - 1));
+
+    // saving / loading / forgetting taught signs
+    function updateModelNote() {
+      const n = model.size;
+      $("model-note").textContent = n
+        ? `You have taught it ${n} sign${n === 1 ? "" : "s"}: ${[...new Set([...model.shapes.keys(), ...model.motions.keys()])].join(", ")}. They are saved in this browser. Save them to a file to use them on another computer or share them with your group.`
+        : "You have not taught it any signs yet. Teaching takes about two minutes and makes recognition much more accurate for your hands.";
+      $("model-export").disabled = !n;
+      $("model-forget").disabled = !n;
+    }
+    $("model-teach").addEventListener("click", () => { settingsDlg.close(); openTeach(); });
+    $("model-export").addEventListener("click", () => {
+      download("dotacs-my-signs.json", JSON.stringify(model.toJSON()), "application/json");
+    });
+    $("model-import").addEventListener("click", () => $("model-file").click());
+    $("model-file").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      try {
+        const json = JSON.parse(await file.text());
+        if (!json || (!json.shapes && !json.motions)) throw new Error("not a dotacs signs file");
+        model.load(json);
+        saveModel();
+      } catch (err) {
+        alert("That file could not be loaded. Choose a file saved from dotacs (dotacs-my-signs.json).");
       }
-      dets.forEach((d, i) => {
-        if (usedDets.has(i)) return;
-        const free = hands.find(h => !h.active && !takenHands.has(h));
-        if (free) { takenHands.add(free); result.push({ h: free, det: d }); }
+    });
+    $("model-forget").addEventListener("click", () => {
+      if (!confirm("Forget all the signs you taught? This cannot be undone.")) return;
+      model.clear();
+      saveModel();
+    });
+
+    // ------------------------------------------------------------------
+    // Settings dialog, theme, hologram, presentation mode
+    // ------------------------------------------------------------------
+    const FMT = {
+      holdMs: v => `${(v / 1000).toFixed(2)} s`,
+      wordGapMs: v => `${(v / 1000).toFixed(1)} s`,
+      rate: v => `${(+v).toFixed(1)}×`
+    };
+    function syncSettingsUI() {
+      document.querySelectorAll("[data-setting]").forEach(el => {
+        const key = el.dataset.setting;
+        if (el.type === "checkbox") el.checked = !!settings[key];
+        else if (key !== "voice" || [...el.options].some(o => o.value === settings.voice)) el.value = settings[key];
       });
-      return result;
+      document.querySelectorAll("output[data-for]").forEach(o => {
+        o.textContent = FMT[o.dataset.for] ? FMT[o.dataset.for](settings[o.dataset.for]) : settings[o.dataset.for];
+      });
     }
+    document.querySelectorAll("[data-setting]").forEach(el => {
+      el.addEventListener(el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input", () => {
+        const key = el.dataset.setting;
+        settings[key] = el.type === "checkbox" ? el.checked : el.type === "range" ? +el.value : el.value;
+        saveSettings();
+        applySettings();
+        syncSettingsUI();
+      });
+    });
+    $("settings-reset").addEventListener("click", () => {
+      Object.assign(settings, DEFAULTS);
+      saveSettings();
+      applySettings();
+      syncSettingsUI();
+    });
+    function openSettings() { syncSettingsUI(); updateModelNote(); if (!settingsDlg.open) settingsDlg.showModal(); }
+    $("btn-settings").addEventListener("click", openSettings);
+    settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
-    function processHand(h, det, now, vw, vh) {
-      h.present = true;
-      h.lostSince = null;
-      h.landmarks = det.lm;
-      h.lastPalm = det.pc;
-      if (!h.active) { h.active = true; h.appearedAt = now; }
+    function toggleHolo() {
+      settings.holo = !settings.holo;
+      saveSettings();
+      applySettings();
+      syncSettingsUI();
+    }
+    $("btn-holo").addEventListener("click", toggleHolo);
 
-      h.smoothW = ema(h.smoothW, det.world, CONFIG.smoothing);
-      h.smoothI = ema(h.smoothI, det.lm, CONFIG.smoothing);
-      h.features = extractFeatures(h, h.smoothW, h.smoothI, vw, vh);
-      h.rule = lookupGesture(h.features);
-      h.sample = pushSample(h, now, h.smoothI, vw, vh, h.rule ? h.rule.say : null, h.features);
-      h.speed = updateSpeed(h);
-      if (h.speed > CONFIG.hold.stillSpeed || h.motion.active) h.lastMovingAt = now;
-      updateMotion(h, now, h.sample, h.speed);
-      updateFlap(h, now, h.sample, h.speed);
+    function toggleTheme() {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      store.set("dotacs.theme", next);
+    }
+    $("btn-theme").addEventListener("click", toggleTheme);
 
-      if (DEBUG && now - lastDebugTime > 250) {
-        lastDebugTime = now;
-        console.log("hand", h.id, JSON.stringify(h.features, (k, v) =>
-          k === "_scores" ? undefined : typeof v === "number" ? Math.round(v * 100) / 100 : v));
+    function toggleFullscreen() {
+      if (document.fullscreenElement) document.exitFullscreen?.();
+      else stageEl.requestFullscreen?.().catch(() => {});
+    }
+    $("btn-present").addEventListener("click", toggleFullscreen);
+    document.addEventListener("fullscreenchange", () => {
+      $("btn-present").querySelector("span").textContent = document.fullscreenElement ? "Exit" : "Present";
+      fxSize();
+    });
+
+    // ------------------------------------------------------------------
+    // Keyboard
+    // ------------------------------------------------------------------
+    document.addEventListener("keydown", (e) => {
+      if (settingsDlg.open) return;
+      const t = e.target;
+      if (t instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) {
+        if (e.key === "Escape" && t.id === "guide-search") { t.value = ""; guideQuery = ""; renderGuide(); t.blur(); }
+        return;
       }
-    }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const onButton = t instanceof HTMLElement && t.tagName === "BUTTON";
+      const k = e.key;
 
-    function pickLead(act) {
-      if (act.length === 1) return act[0];
-      const mode = CONFIG.leadHand;
-      if (mode === "left") return act.reduce((a, b) => (a.sample.palm.x <= b.sample.palm.x ? a : b));
-      if (mode === "right") return act.reduce((a, b) => (a.sample.palm.x >= b.sample.palm.x ? a : b));
-      return act.reduce((a, b) => (a.appearedAt <= b.appearedAt ? a : b));
-    }
+      if (k === "?") { e.preventDefault(); openSettings(); return; }
+      if (k === "h" || k === "H") { toggleHolo(); return; }
+      if (k === "t" || k === "T") { toggleTheme(); return; }
+      if (k === "f" || k === "F") { toggleFullscreen(); return; }
+      if (k === "g" || k === "G") { $("btn-practice").click(); return; }
+      if (k === "m" || k === "M") { $("btn-teach").click(); return; }
+
+      if (game.active) {
+        if (k === "Escape") closeGame();
+        else if (k === "s" || k === "S") {
+          if (game.phase === "teach" && teach.active) teachStep(teach.i + 1);
+          else if (game.phase === "play") skipTarget();
+        } else if (k === "Enter" && !onButton) {
+          if (game.phase === "intro" || game.phase === "over") startRound();
+          else if (game.phase === "teachIntro") startTeach(teachItems());
+        }
+        return;
+      }
+
+      if (k === "Tab" && suggestions.length) { e.preventDefault(); acceptSuggestion(0); return; }
+      if (k === "Backspace") { e.preventDefault(); undoToken(); }
+      else if (k === "Escape") { if (!document.fullscreenElement) $("btn-clear").click(); }
+      else if (k === "Enter" && !onButton) $("btn-speak").click();
+      else if (k === " " && !onButton) { e.preventDefault(); flushSpelling(); renderSentence(); }
+    });
 
     // ------------------------------------------------------------------
-    // Drawing: skeleton coloured by finger state, plus the motion trail
+    // Drawing: neon skeleton coloured by finger state, motion trail, hold ring
     // ------------------------------------------------------------------
-    const COL_EXT = "#ffb319";
-    const COL_CURL = "rgba(255,255,255,0.55)";
-    const COL_PALM = "rgba(255,255,255,0.4)";
+    const CONNECTIONS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11],
+      [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]];
     const groupOf = (i) => i === 0 ? "palm" : i <= 4 ? "thumb" : i <= 8 ? "index" : i <= 12 ? "middle" : i <= 16 ? "ring" : "pinky";
+    const lineScale = () => canvasElement.width / 640;
 
     function drawHand(landmarks, ext) {
-      const w = canvasElement.width, h = canvasElement.height;
+      const w = canvasElement.width, h = canvasElement.height, k = lineScale();
+      const holo = settings.holo;
+      const COL_EXT = holo ? "#7df9ff" : "#ffb319";
+      const COL_CURL = holo ? "rgba(150,170,255,0.8)" : "rgba(255,255,255,0.55)";
+      const COL_PALM = holo ? "rgba(98,116,255,0.75)" : "rgba(255,255,255,0.4)";
+
+      if (holo) {
+        canvasCtx.beginPath();
+        [0, 1, 5, 9, 13, 17].forEach((i, j) => {
+          const x = landmarks[i].x * w, y = landmarks[i].y * h;
+          if (j === 0) canvasCtx.moveTo(x, y); else canvasCtx.lineTo(x, y);
+        });
+        canvasCtx.closePath();
+        canvasCtx.fillStyle = "rgba(98,116,255,0.16)";
+        canvasCtx.fill();
+      }
+
       canvasCtx.lineCap = "round";
-      canvasCtx.lineWidth = 3.5;
-      for (const { start, end } of HandLandmarker.HAND_CONNECTIONS) {
+      canvasCtx.lineWidth = (holo ? 4.5 : 3.5) * k;
+      for (const [start, end] of CONNECTIONS) {
         const g1 = groupOf(start), g2 = groupOf(end);
         const same = g1 === g2 && g1 !== "palm";
         const on = same && ext[g1];
         canvasCtx.strokeStyle = !same ? COL_PALM : on ? COL_EXT : COL_CURL;
-        canvasCtx.shadowColor = on ? COL_EXT : "transparent";
-        canvasCtx.shadowBlur = on ? 10 : 0;
+        canvasCtx.shadowColor = on || holo ? COL_EXT : "transparent";
+        canvasCtx.shadowBlur = (on ? (holo ? 18 : 10) : holo ? 8 : 0) * k;
         canvasCtx.beginPath();
         canvasCtx.moveTo(landmarks[start].x * w, landmarks[start].y * h);
         canvasCtx.lineTo(landmarks[end].x * w, landmarks[end].y * h);
@@ -1437,18 +2365,18 @@
         const on = g !== "palm" && ext[g];
         canvasCtx.fillStyle = on ? COL_EXT : "#ffffff";
         canvasCtx.beginPath();
-        canvasCtx.arc(p.x * w, p.y * h, isTip ? 5.5 : 3, 0, Math.PI * 2);
+        canvasCtx.arc(p.x * w, p.y * h, (isTip ? 5.5 : 3) * k, 0, Math.PI * 2);
         canvasCtx.fill();
         if (isTip) {
           canvasCtx.strokeStyle = "rgba(19,21,31,0.7)";
-          canvasCtx.lineWidth = 1.5;
+          canvasCtx.lineWidth = 1.5 * k;
           canvasCtx.stroke();
         }
       });
     }
 
     function drawTrail(h, now) {
-      const w = canvasElement.width, ch = canvasElement.height;
+      const w = canvasElement.width, ch = canvasElement.height, k = lineScale();
       const span = 700;
       const active = h.motion.active;
       canvasCtx.lineCap = "round";
@@ -1459,8 +2387,8 @@
         const alpha = 1 - age / span;
         canvasCtx.strokeStyle = active ? `rgba(255,255,255,${alpha})` : `rgba(143,160,255,${alpha * 0.8})`;
         canvasCtx.shadowColor = active ? "rgba(51,70,255,0.9)" : "transparent";
-        canvasCtx.shadowBlur = active ? 12 : 0;
-        canvasCtx.lineWidth = (active ? 3 : 2) + alpha * 4;
+        canvasCtx.shadowBlur = active ? 12 * k : 0;
+        canvasCtx.lineWidth = ((active ? 3 : 2) + alpha * 4) * k;
         canvasCtx.beginPath();
         canvasCtx.moveTo(a.trail.x * w, a.trail.y * ch);
         canvasCtx.lineTo(b.trail.x * w, b.trail.y * ch);
@@ -1471,14 +2399,38 @@
 
     // thin dashed link between the two palms while both hands are in view
     function drawLink(h0, h1) {
-      const w = canvasElement.width, ch = canvasElement.height;
+      const w = canvasElement.width, ch = canvasElement.height, k = lineScale();
       canvasCtx.save();
-      canvasCtx.setLineDash([6, 8]);
+      canvasCtx.setLineDash([6 * k, 8 * k]);
       canvasCtx.strokeStyle = "rgba(255,255,255,0.35)";
-      canvasCtx.lineWidth = 2;
+      canvasCtx.lineWidth = 2 * k;
       canvasCtx.beginPath();
       canvasCtx.moveTo(h0.lastPalm.x * w, h0.lastPalm.y * ch);
       canvasCtx.lineTo(h1.lastPalm.x * w, h1.lastPalm.y * ch);
+      canvasCtx.stroke();
+      canvasCtx.restore();
+    }
+
+    // the hold progress, drawn as a ring around the palm of the hand that is signing
+    function drawHoldRing(h) {
+      if (!h || !h.present || !h.lastPalm || holdVis.progress <= 0) return;
+      const w = canvasElement.width, ch = canvasElement.height, k = lineScale();
+      const x = h.lastPalm.x * w, y = h.lastPalm.y * ch;
+      const r = Math.max(26 * k, (h.scaleEma || 60) * (w / videoDims.w) * 0.72);
+      const col = holdVis.done ? "#22e08a" : settings.holo ? "#7df9ff" : "#ffb319";
+      canvasCtx.save();
+      canvasCtx.lineCap = "round";
+      canvasCtx.lineWidth = 5 * k;
+      canvasCtx.strokeStyle = "rgba(255,255,255,0.18)";
+      canvasCtx.beginPath();
+      canvasCtx.arc(x, y, r, 0, Math.PI * 2);
+      canvasCtx.stroke();
+      canvasCtx.strokeStyle = col;
+      canvasCtx.shadowColor = col;
+      canvasCtx.shadowBlur = 14 * k;
+      canvasCtx.beginPath();
+      // anticlockwise in canvas space = clockwise on the mirrored screen
+      canvasCtx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 - Math.PI * 2 * holdVis.progress, true);
       canvasCtx.stroke();
       canvasCtx.restore();
     }
@@ -1493,84 +2445,82 @@
     // ------------------------------------------------------------------
     // Main loop
     // ------------------------------------------------------------------
-    function toPseudoWorld(landmarks, vw, vh) {
-      return landmarks.map(p => ({ x: p.x * vw, y: p.y * vh, z: (p.z || 0) * vw }));
+    let fps = 0, lastFrameAt = 0, lastFpsShow = 0;
+
+    function predictWebcam() {
+      try {
+        frame();
+      } catch (err) {
+        console.error("Frame failed", err);
+      }
+      requestAnimationFrame(predictWebcam);
     }
 
-    async function predictWebcam() {
-      if (video.currentTime !== lastVideoTime && video.readyState >= 2) {
-        lastVideoTime = video.currentTime;
+    function frame() {
+      if (video.currentTime === lastVideoTime || video.readyState < 2) return;
+      lastVideoTime = video.currentTime;
 
-        const now = performance.now();
-        const results = handLandmarker.detectForVideo(video, now);
-        const vw = video.videoWidth || 640;
-        const vh = video.videoHeight || 480;
+      const now = performance.now();
+      if (lastFrameAt) {
+        const inst = 1000 / Math.max(1, now - lastFrameAt);
+        fps = fps ? fps + 0.1 * (inst - fps) : inst;
+      }
+      lastFrameAt = now;
+      if (now - lastFpsShow > 500) {
+        lastFpsShow = now;
+        fpsChip.querySelector("span").textContent = `${Math.round(fps)} fps`;
+      }
 
-        canvasCtx.save();
+      const results = handLandmarker.detectForVideo(video, now);
+      const vw = video.videoWidth || 640;
+      const vh = video.videoHeight || 480;
+      videoDims.w = vw;
+      videoDims.h = vh;
+
+      const out = engine.process(results, now, vw, vh);
+      leadHand = out.lead;
+
+      canvasCtx.save();
+      try {
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        const drawSkeleton = settings.skeleton || settings.holo;
+        out.hands.forEach(h => drawTrail(h, now));
+        if (out.hands.length === 2 && drawSkeleton) drawLink(out.hands[0], out.hands[1]);
+        if (drawSkeleton) out.hands.forEach(h => drawHand(h.landmarks, h.features.ext));
 
-        // 1. match detections to the two hand slots and update each hand
-        hands.forEach(h => { h.present = false; });
-        const dets = (results.landmarks || []).map((lm, i) => ({
-          lm,
-          world: (results.worldLandmarks && results.worldLandmarks[i]) || toPseudoWorld(lm, vw, vh),
-          pc: palmCenter(lm)
-        }));
-        for (const { h, det } of assignHands(dets)) processHand(h, det, now, vw, vh);
+        for (const ev of out.events) onEngineEvent(ev);
 
-        // 2. hands that disappeared: keep them briefly, then reset
-        for (const h of hands) {
-          if (!h.active || h.present) continue;
-          if (h.lostSince === null) h.lostSince = now;
-          if (now - h.lostSince > CONFIG.handLostGraceMs) {
-            if (h.motion.active) finishMotion(h);
-            Object.assign(h, newHand(h.id));
-            pair.buf.length = 0;
-          }
-        }
-
-        // 3. draw
-        const present = hands.filter(h => h.present);
-        present.forEach(h => { drawTrail(h, now); });
-        if (present.length === 2) drawLink(present[0], present[1]);
-        present.forEach(h => { drawHand(h.landmarks, h.features.ext); });
-
-        // 4. two-hand motion
-        if (present.length === 2) updatePair(now, hands[0], hands[1]);
-
-        // 5. pick what the readout shows: a two-hand sign, else the lead hand's sign
-        const act = hands.filter(h => h.active);
-        if (!act.length) {
-          lastLoggedKey = "";
+        if (!out.active.length) {
           suppressUntil = 0;
+          shownConf = 0;
           commit(NOHAND, null, true);
+          showConf(0, false);
           updateHold(now, false, false);
           setChip(handChip, false, "No hand");
           setChip(motionChip, false, "Still");
         } else {
-          let rule = null;
-          if (act.length === 2) rule = lookupPairStatic(pairFeatures(act[0], act[1]));
-          const lead = pickLead(act);
-          if (!rule) rule = lead.rule;
-
-          if (lead.features.key !== lastLoggedKey) {
-            lastLoggedKey = lead.features.key;
-            console.log(lead.features.key);
-          }
-
-          commit(rule ? rule.label : UNKNOWN, rule);
-          const moving = act.some(h => h.motion.active || h.speed > CONFIG.hold.stillSpeed);
-          updateHold(now, moving, true);
-          setChip(handChip, true, act.length === 2 ? "2 hands" : "1 hand");
-          setChip(motionChip, moving, moving ? "Moving" : "Still");
+          commit(out.rule ? out.rule.label : UNKNOWN, out.rule);
+          shownConf = shownRule && out.rule && shownRule.say === out.rule.say ? out.conf : 0;
+          showConf(shownConf, !!shownRule);
+          updateHold(now, out.moving, true);
+          drawHoldRing(out.lead);
+          setChip(handChip, true, out.active.length === 2 ? "2 hands" : "1 hand");
+          setChip(motionChip, out.moving, out.moving ? "Moving" : "Still");
         }
 
+        teachTick(now, out);
+      } finally {
         canvasCtx.restore();
       }
-
-      requestAnimationFrame(predictWebcam);
     }
 
+    // ------------------------------------------------------------------
+    // Start
+    // ------------------------------------------------------------------
+    applySettings();
+    syncSettingsUI();
+    updateModelNote();
+    renderGuide();
     renderSentence();
     initializeHandTracker();
   </script>
