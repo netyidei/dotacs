@@ -644,6 +644,65 @@
     .keys dd { margin: 0; color: var(--muted); }
     .x { border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--muted); padding: 2px 6px; }
 
+    /* ---------- account dialog ---------- */
+    .tool .avatar {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: inline-grid; place-items: center;
+      background: var(--cobalt); color: #fff; font-size: 0.72rem; font-weight: 700;
+    }
+    .acct header { align-items: flex-start; }
+    .acct-sub { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
+    .dseg { display: inline-flex; padding: 3px; margin: 14px 0 10px; border-radius: 11px; background: var(--paper); border: 1px solid var(--line); }
+    .dseg button { border: 0; background: transparent; padding: 6px 14px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+    .dseg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14); }
+    .dseg.small { margin: 0 0 8px; }
+    .dseg.small button { padding: 4px 11px; font-size: 0.85rem; }
+    .field input[type="text"], .field input[type="email"], .field input[type="password"] {
+      padding: 9px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--tile);
+    }
+    .field small { color: var(--muted); font-size: 0.8rem; }
+    .form-error { min-height: 1.2em; margin: 0 0 8px; color: var(--coral); font-size: 0.9rem; }
+    .primary-btn { width: 100%; padding: 10px 16px; border: 0; border-radius: 10px; background: var(--cobalt); color: #fff; font-weight: 700; cursor: pointer; }
+    .primary-btn:hover { filter: brightness(1.08); }
+    .primary-btn:disabled { opacity: 0.6; cursor: wait; }
+    .tiles3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .tiles3 div { padding: 10px 6px; border-radius: 10px; background: var(--tile); border: 1px solid var(--line); text-align: center; }
+    .tiles3 b { display: block; font-size: 1.6rem; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .tiles3 span { font-size: 0.75rem; color: var(--muted); }
+    ol.board { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+    ol.board li {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 6px 10px; border-radius: 8px; background: var(--tile); border: 1px solid var(--line); font-size: 0.9rem;
+    }
+    ol.board li.me { border-color: var(--cobalt); background: var(--cobalt-soft); }
+    ol.board .rk { width: 1.7em; color: var(--muted); font-variant-numeric: tabular-nums; }
+    ol.board .nm { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    ol.board .meta { color: var(--muted); font-size: 0.8rem; }
+    ol.board .sc { font-weight: 700; font-variant-numeric: tabular-nums; }
+    ol.board .none { color: var(--muted); font-size: 0.85rem; background: none; border-style: dashed; }
+    .del-box { margin-top: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--coral); display: grid; gap: 8px; }
+    .del-box p { margin: 0; font-size: 0.88rem; }
+    .del-box input, .inj-form input { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--tile); }
+    .tbl-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .tbl-counts div {
+      display: flex; justify-content: space-between; gap: 6px; padding: 6px 10px; border-radius: 8px;
+      background: var(--tile); border: 1px solid var(--line); font-size: 0.85rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .inj-form { display: flex; gap: 8px; }
+    .inj-form input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .inj { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .inj-col { padding: 10px; border-radius: 10px; border: 2px solid; min-width: 0; }
+    .inj-col.bad { border-color: var(--coral); }
+    .inj-col.good { border-color: var(--mint); }
+    .inj-col h4 { margin: 0 0 6px; font-size: 0.85rem; }
+    .inj-col code { display: block; padding: 6px 8px; border-radius: 6px; background: var(--paper); font-size: 0.74rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .inj-col table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.78rem; }
+    .inj-col th, .inj-col td { text-align: left; padding: 3px 4px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+    .inj-verdict { margin-top: 8px; font-size: 0.82rem; font-weight: 700; }
+    .bad .inj-verdict { color: var(--coral); }
+    .good .inj-verdict { color: var(--mint); }
+
     @media (max-width: 980px) {
       .layout { grid-template-columns: minmax(0, 1fr); padding: 16px 16px 32px; }
       .top { padding: 16px 16px 0; }
@@ -651,6 +710,7 @@
     }
     @media (max-width: 560px) {
       .brand .tag, .tool .lbl { display: none; }
+      .inj { grid-template-columns: minmax(0, 1fr); }
       .tool { padding: 8px; }
       .ch-play-grid { grid-template-columns: auto minmax(0, 1fr); }
       .stats { grid-column: 1 / -1; justify-content: flex-start; text-align: left; }
@@ -681,6 +741,11 @@
       </button>
       <button class="tool icon" id="btn-theme" title="Light / dark (T)" aria-label="Switch light and dark theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+      </button>
+      <button class="tool" id="btn-account" title="Sign in to save your sentences and scores" hidden>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span class="avatar" hidden></span>
+        <span class="lbl">Sign in</span>
       </button>
       <button class="tool icon" id="btn-settings" title="Settings and shortcuts (?)" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="18" cy="18" r="2.2"/></svg>
@@ -804,6 +869,7 @@
           <div class="over-score" id="ov-score">0</div>
           <p id="ov-detail"></p>
           <p id="ov-best"></p>
+          <p class="ch-meta" id="ov-rank"></p>
           <div class="ch-actions">
             <button class="btn go" id="ch-again">Play again (Enter)</button>
             <span class="spacer"></span>
@@ -948,9 +1014,83 @@
     </form>
   </dialog>
 
+  <dialog id="account" aria-labelledby="acct-title">
+    <div class="settings acct">
+      <header>
+        <div>
+          <h2 id="acct-title">Sign in</h2>
+          <div class="acct-sub" id="acct-sub">Save your sentences and scores</div>
+        </div>
+        <button class="x" type="button" id="acct-close" aria-label="Close">&times;</button>
+      </header>
+
+      <section id="acct-auth">
+        <div class="dseg" id="acct-mode" role="group" aria-label="Sign in or create an account">
+          <button type="button" data-mode="login" aria-pressed="true">Sign in</button>
+          <button type="button" data-mode="register" aria-pressed="false">Create account</button>
+        </div>
+        <form id="acct-form" novalidate>
+          <label class="field"><span>Username</span>
+            <input type="text" id="acct-user" autocomplete="username" maxlength="20" spellcheck="false" autocapitalize="off" required></label>
+          <label class="field" id="acct-email-wrap" hidden><span>Email</span>
+            <input type="email" id="acct-email" autocomplete="email" maxlength="254"></label>
+          <label class="field"><span>Password <small id="acct-pass-hint"></small></span>
+            <input type="password" id="acct-pass" autocomplete="current-password" maxlength="128" required></label>
+          <p class="form-error" id="acct-error" role="alert"></p>
+          <button class="primary-btn" type="submit" id="acct-submit">Sign in</button>
+        </form>
+        <p class="note" style="margin-top: 12px">With an account, the sentences you speak and your practice scores are saved in the dotacs database (PostgreSQL), so they follow you to any computer.</p>
+      </section>
+
+      <section id="acct-profile" hidden>
+        <div class="tiles3">
+          <div><b id="st-sentences">0</b><span>sentences</span></div>
+          <div><b id="st-rounds">0</b><span>practice rounds</span></div>
+          <div><b id="st-best">0</b><span>best score</span></div>
+        </div>
+        <h3>Leaderboard</h3>
+        <div class="dseg small" id="lb-cat" role="group" aria-label="Leaderboard">
+          <button type="button" data-cat="letters" aria-pressed="true">Letters</button>
+          <button type="button" data-cat="words" aria-pressed="false">Words</button>
+          <button type="button" data-cat="all" aria-pressed="false">Everything</button>
+        </div>
+        <ol class="board" id="lb-list"></ol>
+        <div class="row-btns" style="margin-top: 14px">
+          <button class="mini" type="button" id="acct-logout">Sign out</button>
+          <button class="mini danger" type="button" id="acct-del-open">Delete my account</button>
+        </div>
+        <form class="del-box" id="acct-del" hidden>
+          <p>This permanently deletes your account, your sentences and your scores. Type your password to confirm.</p>
+          <input type="password" id="acct-del-pass" autocomplete="current-password" maxlength="128" aria-label="Password">
+          <button class="mini danger" type="submit">Delete forever</button>
+          <p class="form-error" id="acct-del-error" role="alert"></p>
+        </form>
+      </section>
+
+      <section id="acct-admin" hidden>
+        <h3>Database (admin only)</h3>
+        <div class="tbl-counts" id="adm-counts"></div>
+        <p class="note" id="adm-meta" style="margin-top: 8px"></p>
+        <div id="adm-inj-wrap">
+          <h3>SQL injection demo</h3>
+          <p class="note">Type a "username". The unsafe query glues it into the SQL; the safe query sends it separately as a parameter. Both run on a temporary, read-only copy of the Users table.</p>
+          <form class="inj-form" id="adm-inj">
+            <input type="text" id="adm-inj-input" value="' OR '1'='1" maxlength="120" spellcheck="false" aria-label="Username to look up">
+            <button class="mini" type="submit">Run both</button>
+          </form>
+          <div class="inj" id="adm-inj-out" hidden>
+            <div class="inj-col bad"><h4>Unsafe: text glued into the SQL</h4><code id="inj-unsafe-sql"></code><div id="inj-unsafe-res"></div></div>
+            <div class="inj-col good"><h4>Safe: parameterized query</h4><code id="inj-safe-sql"></code><div id="inj-safe-res"></div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
   <script type="module">
     import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
     import { SignEngine, SignModel, motionTemplate } from "./recognizer.js";
+    import { api } from "./api.js";
 
     const $ = (id) => document.getElementById(id);
     const video = $("webcam");
@@ -1017,6 +1157,9 @@
     const settings = Object.assign({}, DEFAULTS, store.get("dotacs.settings", {}));
     const saveSettings = () => store.set("dotacs.settings", settings);
 
+    // signed-in account; online = false when the server or database is not available
+    const account = { online: false, user: null, bestByCategory: {} };
+
     // the signs this person taught it
     const model = new SignModel(store.get("dotacs.model", null));
     function saveModel() {
@@ -1047,7 +1190,10 @@
     function setReadyStatus() {
       if (!cameraOn) return;
       const n = model.size;
-      setStatus(n ? `Camera on · ${n} sign${n === 1 ? "" : "s"} taught` : "Camera on", "ok");
+      const parts = ["Camera on"];
+      if (n) parts.push(`${n} sign${n === 1 ? "" : "s"} taught`);
+      if (account.user) parts.push(account.user.username);
+      setStatus(parts.join(" \u00B7 "), "ok");
     }
     function setBoot(step, state) { $("boot-" + step).dataset.state = state; }
     function bootError(html, retry = false) {
@@ -1509,7 +1655,8 @@
       if (history[0] && history[0].text === text && Date.now() - history[0].at < 5000) return;
       history.unshift({ text, at: Date.now() });
       history = history.slice(0, 60);
-      store.set("dotacs.history", history);
+      if (account.user) api.addSentence(text.slice(0, 500)).then(r => { if (!r.ok) syncProblem(r); });
+      else store.set("dotacs.history", history);
       if (guideTab === "history") renderGuide();
     }
     function download(name, text, type = "text/plain") {
@@ -1520,9 +1667,15 @@
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
-    $("hist-clear").addEventListener("click", () => {
+    $("hist-clear").addEventListener("click", async () => {
+      if (account.user) {
+        if (!confirm("Delete all your saved sentences from your account?")) return;
+        const r = await api.clearSentences();
+        if (!r.ok) { syncProblem(r); return; }
+      } else {
+        store.set("dotacs.history", []);
+      }
       history = [];
-      store.set("dotacs.history", history);
       renderGuide();
     });
     $("hist-download").addEventListener("click", () => {
@@ -1535,7 +1688,9 @@
       if (!history.length) {
         const p = document.createElement("p");
         p.className = "empty";
-        p.textContent = "Sentences you speak will show up here.";
+        p.textContent = account.user
+          ? "Sentences you speak are saved to your account and show up here."
+          : "Sentences you speak will show up here.";
         guideBody.appendChild(p);
         return;
       }
@@ -1704,6 +1859,7 @@
       if (!rule) {
         hold.committed = false;
       } else if (teaching) {
+        hold.since = now; hold.committed = false;  // nothing is typed while teaching, and not right after either
         hint = `Right now it looks like “${rule.say}”`;
       } else if (now < suppressUntil) {
         hold.since = now; hold.committed = false;
@@ -1763,6 +1919,7 @@
     const targetEl = $("ch-target");
     const chFeedback = $("ch-feedback");
     const bestKey = () => "dotacs.best." + game.pool;
+    const bestFor = (pool) => (account.user ? (account.bestByCategory[pool] || 0) : store.get("dotacs.best." + pool, 0));
 
     function poolItems(pool = game.pool) {
       return guideItems.filter(i => pool === "all" || (pool === "words" ? i.kind === "word" : i.kind !== "word"));
@@ -1771,7 +1928,7 @@
     function renderPool() {
       document.querySelectorAll("#ch-pool button").forEach(b =>
         b.setAttribute("aria-pressed", String(b.dataset.pool === game.pool)));
-      $("ch-meta").textContent = `${poolItems().length} signs · best ${store.get(bestKey(), 0)}`;
+      $("ch-meta").textContent = `${poolItems().length} signs \u00B7 best ${bestFor(game.pool)}`;
     }
     document.querySelectorAll("#ch-pool button").forEach(b => b.addEventListener("click", () => {
       game.pool = b.dataset.pool;
@@ -1915,9 +2072,24 @@
 
     function endRound() {
       clearGameTimers();
-      const best = store.get(bestKey(), 0);
+      const pool = game.pool;
+      const best = bestFor(pool);
       const isBest = game.score > best;
-      if (isBest) store.set(bestKey(), game.score);
+      if (isBest) {
+        if (account.user) account.bestByCategory[pool] = game.score;
+        else store.set(bestKey(), game.score);
+      }
+      const rankEl = $("ov-rank");
+      rankEl.textContent = "";
+      if (account.user) {
+        rankEl.textContent = "Saving to your account...";
+        api.addScore(pool, game.score, game.solved).then(r => {
+          if (r.ok) rankEl.textContent = `Saved \u00B7 you are #${r.data.rank} on the ${pool === "all" ? "everything" : pool} leaderboard`;
+          else { rankEl.textContent = "This score could not be saved."; syncProblem(r); }
+        });
+      } else if (account.online) {
+        rankEl.textContent = "Sign in to save your scores and join the leaderboard.";
+      }
       showPhase("over");
       $("ov-score").textContent = game.score;
       $("ov-detail").textContent = `${game.solved} sign${game.solved === 1 ? "" : "s"} · best streak ${game.bestStreak}`;
@@ -2279,10 +2451,239 @@
     });
 
     // ------------------------------------------------------------------
+    // Accounts and the database (server.py + PostgreSQL, see api.js)
+    // Signed in: spoken sentences and practice scores are saved in the database.
+    // Guests: everything stays in this browser, as before.
+    // ------------------------------------------------------------------
+    const acctDlg = $("account");
+    const acctBtn = $("btn-account");
+    let authMode = "login";
+    let lbCategory = "letters";
+
+    function syncProblem(r) {
+      if (r.status === 401 && account.user) {
+        signedOut();
+        setStatus("Signed out: your session ended", "error");
+        return;
+      }
+      console.warn("Database request failed:", r.error);
+      setStatus(r.status === 0 ? "Cannot reach the server" : "Could not save to the database", "error");
+      setTimeout(setReadyStatus, 4000);
+    }
+
+    function renderAccountButton() {
+      acctBtn.hidden = !account.online;
+      const av = acctBtn.querySelector(".avatar");
+      acctBtn.querySelector(".lbl").textContent = account.user ? account.user.username : "Sign in";
+      av.textContent = account.user ? account.user.username.charAt(0).toUpperCase() : "";
+      av.hidden = !account.user;
+      acctBtn.querySelector(".ico").style.display = account.user ? "none" : "";
+      acctBtn.title = account.user ? "Your account and the leaderboard" : "Sign in to save your sentences and scores";
+    }
+
+    async function initAccount() {
+      const r = await api.health();
+      account.online = !!(r.ok && r.data && r.data.app === "dotacs");
+      if (account.online && r.data.user) await signedIn(r.data.user);
+      renderAccountButton();
+      setReadyStatus();
+    }
+
+    async function signedIn(user) {
+      account.user = user;
+      renderAccountButton();
+      const [list, stats] = await Promise.all([api.sentences(), api.stats()]);
+      if (list.ok) history = list.data.sentences.map(s => ({ text: s.text, at: Date.parse(s.at) }));
+      account.bestByCategory = stats.ok ? stats.data.bestByCategory : {};
+      renderGuide();
+      renderPool();
+      setReadyStatus();
+    }
+
+    function signedOut() {
+      account.user = null;
+      account.bestByCategory = {};
+      history = store.get("dotacs.history", []);  // back to this browser's guest history
+      renderAccountButton();
+      renderGuide();
+      renderPool();
+      setReadyStatus();
+    }
+
+    // ----- dialog -----
+    function setAuthMode(mode) {
+      authMode = mode;
+      document.querySelectorAll("#acct-mode button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+      const reg = mode === "register";
+      $("acct-email-wrap").hidden = !reg;
+      $("acct-submit").textContent = reg ? "Create account" : "Sign in";
+      $("acct-pass").autocomplete = reg ? "new-password" : "current-password";
+      $("acct-pass-hint").textContent = reg ? "at least 8 characters" : "";
+      $("acct-error").textContent = "";
+    }
+    document.querySelectorAll("#acct-mode button").forEach(b => b.addEventListener("click", () => setAuthMode(b.dataset.mode)));
+    ["acct-user", "acct-email", "acct-pass"].forEach(id => $(id).addEventListener("input", () => { $("acct-error").textContent = ""; }));
+
+    function openAccount() {
+      if (!account.online) return;
+      const signed = !!account.user;
+      $("acct-auth").hidden = signed;
+      $("acct-profile").hidden = !signed;
+      $("acct-admin").hidden = !(signed && account.user.role === "admin");
+      $("acct-del").hidden = true;
+      if (signed) showProfile();
+      else {
+        $("acct-title").textContent = "Sign in";
+        $("acct-sub").textContent = "Save your sentences and scores";
+        setAuthMode(authMode);
+      }
+      if (!acctDlg.open) acctDlg.showModal();
+      if (!signed) $("acct-user").focus();
+    }
+    acctBtn.addEventListener("click", openAccount);
+    $("acct-close").addEventListener("click", () => acctDlg.close());
+    acctDlg.addEventListener("click", (e) => { if (e.target === acctDlg) acctDlg.close(); });
+
+    $("acct-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = $("acct-user").value.trim().toLowerCase();
+      const email = $("acct-email").value.trim();
+      const password = $("acct-pass").value;
+      const err = $("acct-error");
+      // quick friendly checks here; the server checks everything again
+      if (!username || !password) { err.textContent = "Enter a username and a password."; return; }
+      if (authMode === "register") {
+        if (!/^[a-z0-9_]{3,20}$/.test(username)) { err.textContent = "Username: 3 to 20 letters, numbers or _ only."; return; }
+        if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { err.textContent = "Enter a valid email address."; return; }
+        if (password.length < 8) { err.textContent = "Password: at least 8 characters."; return; }
+      }
+      const btn = $("acct-submit");
+      btn.disabled = true;
+      const r = authMode === "register" ? await api.register(username, email, password) : await api.login(username, password);
+      btn.disabled = false;
+      if (!r.ok) { err.textContent = r.error; return; }
+      $("acct-pass").value = "";
+      authMode = "login";
+      await signedIn(r.data.user);
+      openAccount();
+    });
+
+    async function showProfile() {
+      const u = account.user;
+      $("acct-title").textContent = u.username;
+      $("acct-sub").textContent = u.email + (u.role === "admin" ? " · admin" : "");
+      loadLeaderboard();
+      if (u.role === "admin") loadAdmin();
+      const r = await api.stats();
+      if (!r.ok) { syncProblem(r); return; }
+      $("st-sentences").textContent = r.data.sentences;
+      $("st-rounds").textContent = r.data.rounds;
+      $("st-best").textContent = r.data.best;
+    }
+
+    async function loadLeaderboard() {
+      document.querySelectorAll("#lb-cat button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.cat === lbCategory)));
+      const ol = $("lb-list");
+      const r = await api.leaderboard(lbCategory);
+      ol.textContent = "";
+      const note = (text) => { const li = document.createElement("li"); li.className = "none"; li.textContent = text; ol.appendChild(li); };
+      if (!r.ok) { note("Could not load the leaderboard."); return; }
+      if (!r.data.leaders.length) { note("Nobody has played this one yet. Be the first!"); return; }
+      for (const row of r.data.leaders) {
+        const li = document.createElement("li");
+        if (row.me) li.className = "me";
+        const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = "#" + row.rank;
+        const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = row.name;  // textContent: never run as HTML
+        const meta = document.createElement("span"); meta.className = "meta"; meta.textContent = `${row.rounds} round${row.rounds === 1 ? "" : "s"}`;
+        const sc = document.createElement("span"); sc.className = "sc"; sc.textContent = row.best;
+        li.append(rk, nm, meta, sc);
+        ol.appendChild(li);
+      }
+    }
+    document.querySelectorAll("#lb-cat button").forEach(b => b.addEventListener("click", () => {
+      lbCategory = b.dataset.cat;
+      loadLeaderboard();
+    }));
+
+    $("acct-logout").addEventListener("click", async () => {
+      await api.logout();
+      signedOut();
+      acctDlg.close();
+    });
+    $("acct-del-open").addEventListener("click", () => {
+      const box = $("acct-del");
+      box.hidden = !box.hidden;
+      $("acct-del-error").textContent = "";
+      if (!box.hidden) $("acct-del-pass").focus();
+    });
+    $("acct-del").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const r = await api.deleteAccount($("acct-del-pass").value);
+      $("acct-del-pass").value = "";
+      if (!r.ok) { $("acct-del-error").textContent = r.error; return; }
+      signedOut();
+      acctDlg.close();
+      setStatus("Your account and its data were deleted", "ok");
+      setTimeout(setReadyStatus, 5000);
+    });
+
+    // ----- admin: table sizes and the SQL injection demo -----
+    async function loadAdmin() {
+      const r = await api.adminOverview();
+      if (!r.ok) return;
+      const box = $("adm-counts");
+      box.textContent = "";
+      for (const [table, n] of Object.entries(r.data.tables)) {
+        const d = document.createElement("div");
+        const name = document.createElement("span"); name.textContent = table;
+        const count = document.createElement("b"); count.textContent = n;
+        d.append(name, count);
+        box.appendChild(d);
+      }
+      $("adm-meta").textContent = r.data.version;
+      $("adm-inj-wrap").hidden = !r.data.demoAllowed;
+    }
+
+    function resultTable(holder, columns, rows, verdict) {
+      holder.textContent = "";
+      if (rows.length) {
+        const t = document.createElement("table");
+        const hr = t.insertRow();
+        columns.forEach(c => { const th = document.createElement("th"); th.textContent = c; hr.appendChild(th); });
+        rows.forEach(r => { const tr = t.insertRow(); r.forEach(v => { tr.insertCell().textContent = v; }); });
+        holder.appendChild(t);
+      }
+      const p = document.createElement("div");
+      p.className = "inj-verdict";
+      p.textContent = verdict;
+      holder.appendChild(p);
+    }
+
+    $("adm-inj").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const r = await api.injectionDemo($("adm-inj-input").value);
+      if (!r.ok) { syncProblem(r); return; }
+      const { unsafe, safe, columns, total } = r.data;
+      $("adm-inj-out").hidden = false;
+      $("inj-unsafe-sql").textContent = unsafe.sql;
+      $("inj-safe-sql").textContent = `${safe.sql}\n? = ${JSON.stringify(safe.param)}`;
+      const leaked = unsafe.rows.length > 1 || (unsafe.rows.length === 1 && safe.rows.length === 0);
+      resultTable($("inj-unsafe-res"), columns, unsafe.rows,
+        unsafe.error ? `The typed text broke the query: ${unsafe.error}`
+          : leaked ? `Returned ${unsafe.rows.length} of ${total} users. The typed text changed the query!`
+            : `Returned ${unsafe.rows.length} row${unsafe.rows.length === 1 ? "" : "s"}.`);
+      resultTable($("inj-safe-res"), columns, safe.rows,
+        `Returned ${safe.rows.length} row${safe.rows.length === 1 ? "" : "s"}: the typed text was only used as a name.`);
+    });
+
+
+    // ------------------------------------------------------------------
     // Keyboard
     // ------------------------------------------------------------------
     document.addEventListener("keydown", (e) => {
-      if (settingsDlg.open) return;
+      if (document.querySelector("dialog[open]")) return;
       const t = e.target;
       if (t instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) {
         if (e.key === "Escape" && t.id === "guide-search") { t.value = ""; guideQuery = ""; renderGuide(); t.blur(); }
@@ -2522,6 +2923,7 @@
     updateModelNote();
     renderGuide();
     renderSentence();
+    initAccount();
     initializeHandTracker();
   </script>
 </body>

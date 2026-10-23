@@ -1,0 +1,27 @@
+%% dotacs ERD in Mermaid. Paste into https://mermaid.live to edit or export it.
+erDiagram
+    Users ||--o{ Sentences : "speaks"
+    Users ||--o{ Scores : "earns"
+
+    Users {
+        int User_ID PK
+        varchar Username UK
+        varchar Email UK
+        varchar PasswordHash
+        varchar Role "user or admin"
+        timestamp CreatedAt
+    }
+    Sentences {
+        int Sentence_ID PK
+        int User_ID FK
+        varchar SentenceText
+        timestamp CreatedAt
+    }
+    Scores {
+        int Score_ID PK
+        int User_ID FK
+        varchar Category "letters, words or all"
+        int Points
+        int SignsSolved
+        timestamp PlayedAt
+    }
