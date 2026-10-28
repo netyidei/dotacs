@@ -1,7 +1,3 @@
--- dotacs: queries a real user of the app needs (PostgreSQL)
--- Run dotacs.sql first, then these one at a time.
-
-
 -- a. LOOKUP: practice scores above 4000 points
 SELECT * FROM Scores WHERE Points > 4000;
 
@@ -38,13 +34,7 @@ SELECT (SELECT COUNT(*) FROM Sentences WHERE User_ID = 8) AS LeoSentences, (SELE
 -- SECURITY: the same lookup written unsafely and safely
 -- ---------------------------------------------------------------------------
 -- UNSAFE (the typed text is glued into the SQL):
---     sql = "SELECT * FROM Users WHERE Username = '" + username + "'"
--- If someone types   ' OR '1'='1   the database receives:
 SELECT * FROM Users WHERE Username = '' OR '1'='1';
 -- '1'='1' is always true, so this returns EVERY user.
---
 -- SAFE (parameterized query, what server.py does):
---     db.execute("SELECT * FROM Users WHERE Username = %s", (username,))
--- The SQL never changes; the typed text is sent separately and only compared as a name.
--- That is the same as asking for a user literally called ' OR '1'='1 , which returns 0 rows:
 SELECT * FROM Users WHERE Username = ''' OR ''1''=''1';

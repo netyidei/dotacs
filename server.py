@@ -1,23 +1,5 @@
 #!/usr/bin/env python3
-"""dotacs server: serves the app and saves accounts, sentences and scores in PostgreSQL.
 
-Setup (once, nothing to install)
-  1. Make a free PostgreSQL database (for example on neon.tech) and copy its connection string.
-  2. Put it in a file called .env next to this file:
-         DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
-  3. python server.py        then open http://localhost:8000
-
-On the first run the server creates the 3 tables from database/dotacs.sql (with sample data)
-and prints a password for a new admin account.
-
-How it keeps the database safe
-  * every query uses %s placeholders (parameterized), never text glued into SQL
-  * passwords are stored as PBKDF2 hashes with a random salt, never as plain text
-  * 5 wrong passwords in 15 minutes blocks that username from that computer
-  * every input is checked (type, length, allowed characters) before it reaches the database
-  * a user can only read and change their own rows; admin pages check the Role column
-  * the browser can only download the app's own files, never .env or the SQL files
-"""
 from __future__ import annotations
 
 import argparse

@@ -1,22 +1,10 @@
--- dotacs database (PostgreSQL)
---
--- 3 tables:
---   Users      one row per account
---   Sentences  sentences a user turned into speech
---   Scores     results of the 60-second practice game
---
--- Run this whole file in your PostgreSQL SQL editor (Neon, Supabase, db-fiddle) or with psql.
--- It creates the tables and fills them with sample data.
--- Every sample account uses the password: signdemo2026
-
--- start fresh (removes old copies of these tables)
 DROP TABLE IF EXISTS Scores, Sentences, Users;
 
 CREATE TABLE Users (
     User_ID      SERIAL       PRIMARY KEY,
     Username     VARCHAR(20)  NOT NULL UNIQUE,
     Email        VARCHAR(254) NOT NULL UNIQUE,
-    PasswordHash VARCHAR(255) NOT NULL,             -- a scrambled (hashed) password, never the password itself
+    PasswordHash VARCHAR(255) NOT NULL,
     Role         VARCHAR(10)  NOT NULL DEFAULT 'user' CHECK (Role IN ('user', 'admin')),
     CreatedAt    TIMESTAMP    NOT NULL DEFAULT NOW()
 );
@@ -37,7 +25,6 @@ CREATE TABLE Scores (
     PlayedAt     TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
--- speeds up the leaderboard
 CREATE INDEX Scores_Category_Points ON Scores (Category, Points DESC);
 
 
