@@ -128,20 +128,35 @@ const argmax = (o) => Object.entries(o).reduce((b, e) => (e[1] > b[1] ? e : b))[
 // ---------------------------------------------------------------------------
 // Sign list (gestures.json)
 // ---------------------------------------------------------------------------
-const RESERVED = new Set(["motions", "pairs", "*"]);
+// gestures.json holds one sign set per language: { "en": {...}, "kk": {...} }.
+// An older file with a single set (no language keys) still works.
+export const LANGUAGES = ["en", "kk"];
+export function signSet(json, lang = "en") {
+  if (!json || typeof json !== "object") return {};
+  if (!LANGUAGES.some(l => json[l])) return json;
+  return json[lang] || json.en || json[LANGUAGES.find(l => json[l])];
+}
 
 export function normRule(r) {
   if (typeof r === "string") r = { label: r };
   const say = r.say ?? r.label;
-  const kind = r.kind ?? (/^[A-Za-z]$/.test(say) ? "letter" : /^\d$/.test(say) ? "number" : "word");
+  const kind = r.kind ?? (/^\p{L}$/u.test(say) ? "letter" : /^\d$/.test(say) ? "number" : "word");
   return Object.assign(r, { say, kind });
 }
 
-export function normalizeDictionary(json) {
-  const dict = { star: [], keyed: [], motions: [], pairs: [], holdBySay: new Map(), all: [] };
-  for (const [key, v] of Object.entries(json)) {
+export function normalizeDictionary(json, lang = "en") {
+  const set = signSet(json, lang);
+  const dict = { lang, star: [], keyed: [], motions: [], pairs: [], teachOnly: [], holdBySay: new Map(), all: [] };
+  for (const [key, v] of Object.entries(set)) {
+    if (key.startsWith("_")) continue;  // notes such as "_about"
     if (key === "motions") { dict.motions = v.map(normRule); continue; }
     if (key === "pairs") { dict.pairs = v.map(normRule); continue; }
+    if (key === "teachOnly") {
+      // signs the rules cannot tell apart on a webcam: they are only recognised after Teach mode
+      dict.teachOnly = v.map(normRule);
+      dict.teachOnly.forEach(r => { r.teachOnly = true; if (!dict.holdBySay.has(r.say)) dict.holdBySay.set(r.say, r); });
+      continue;
+    }
     const list = (Array.isArray(v) ? v : [v]).map(normRule);
     list.forEach(r => { if (!dict.holdBySay.has(r.say)) dict.holdBySay.set(r.say, r); });
     if (key === "*") { dict.star = list; continue; }
@@ -440,11 +455,12 @@ export class SignModel {
   forget(say) { this.shapes.delete(say); this.sigma.delete(say); this.motions.delete(say); }
   clear() { this.shapes.clear(); this.sigma.clear(); this.motions.clear(); }
 
-  // similarity (0..1) of a hand vector to each trained sign
-  shapeScores(vec) {
+  // similarity (0..1) of a hand vector to each trained sign (only the signs in "only", when given)
+  shapeScores(vec, only = null) {
     const sims = new Map();
     let max = 0;
     for (const [say, arr] of this.shapes) {
+      if (only && !only.has(say)) continue;
       const ds = arr.map(v => vdist(v, vec)).sort((a, b) => a - b);
       const k = Math.min(this.cfg.k, ds.length);
       const dk = mean(ds.slice(0, k));
@@ -477,7 +493,8 @@ export class SignModel {
 // mix the rule scores with the personal model
 export function fuseWithModel(list, model, vec, dict, cfg = DEFAULTS.model) {
   if (!model || !model.shapes.size) return list;
-  const { sims, max } = model.shapeScores(vec);
+  const { sims, max } = model.shapeScores(vec, dict && dict.holdBySay);
+  if (!sims.size) return list;
   const out = new Map();
   for (const s of list) out.set(s.rule.say, { rule: s.rule, rp: s.p });
   for (const say of sims.keys()) {
@@ -691,13 +708,24 @@ function newHand(id, cfg) {
 export class SignEngine {
   constructor(gesturesJson, config = {}, model = null) {
     this.cfg = merge(DEFAULTS, config);
-    this.dict = normalizeDictionary(gesturesJson);
+    this.json = gesturesJson;
+    this.dict = normalizeDictionary(gesturesJson, config.lang || "en");
     this.model = model || new SignModel(null, this.cfg.model);
     this.hands = [newHand(0, this.cfg), newHand(1, this.cfg)];
     this.pair = { buf: [], cooldownUntil: 0 };
     this.lastEvent = { say: null, t: 0 };
     this.debug = false;
   }
+
+  // switch the sign set (English / Kazakh) without reloading
+  setLanguage(lang) {
+    if (this.dict.lang === lang) return;
+    this.dict = normalizeDictionary(this.json, lang);
+    this.hands.forEach(h => this.resetHand(h));
+    this.pair = { buf: [], cooldownUntil: 0 };
+    this.lastEvent = { say: null, t: 0 };
+  }
+  get lang() { return this.dict.lang; }
 
   // every sign in the list, for the guide and the practice game
   guideItems() {
@@ -710,6 +738,7 @@ export class SignEngine {
     };
     for (const r of this.dict.star) push(r, "hold");
     for (const { list } of this.dict.keyed) list.forEach(r => push(r, "hold"));
+    this.dict.teachOnly.forEach(r => push(r, "hold"));
     this.dict.motions.forEach(r => push(r, "motion"));
     this.dict.pairs.forEach(r => push(r, r.when && r.when.pairMotion ? "motion" : "hold", true));
     return items;
@@ -969,7 +998,9 @@ export class SignEngine {
       if (tpl) {
         const lenOf = (p) => { let l = 0; for (let i = 1; i < p.length; i++) l += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return l; };
         const candLen = lenOf(tpl.palm) + 0.6 * lenOf(tpl.tip);
+        const inSet = (say) => this.dict.holdBySay.has(say) || this.dict.motions.some(r => r.say === say) || this.dict.pairs.some(r => r.say === say);
         for (const [say, list] of this.model.motions) {
+          if (!inSet(say)) continue;
           let best = 0;
           for (const t of list) {
             // a movement of a very different size is not the same sign

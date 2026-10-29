@@ -5,6 +5,27 @@ Users can sign in so the sentences they speak, their practice game scores and a 
 the app recognised are saved in a **PostgreSQL** database. The **About** button in the app shows
 the main scenario, where the data is stored and which functions are done, partly done or planned.
 
+## Languages: Kazakh and English
+
+When the site opens, you choose **Қазақша** or **English** (change it later with the globe button or the **L** key).
+The choice switches both the signs and the interface:
+
+| | Kazakh (`kk`) | English (`en`) |
+|---|---|---|
+| Letters | Kazakh fingerspelling: all 42 letters (А Ә Б В Г Ғ ... Ю Я) | 19 letters (ASL-style) |
+| Words | 25 Kazakh phrases (Сәлеметсіз бе, Рақмет, Иә, Жоқ, Кешіріңіз ...) | 29 words |
+| Interface | Kazakh (`i18n.js`) | English |
+| Voice | a Kazakh voice if the device has one, otherwise Russian | English |
+
+How the Kazakh letters are built:
+
+- The 33 letters shared with Russian follow the Russian dactyl alphabet.
+- The 9 Kazakh letters (Ә Ғ Қ Ң Ө Ұ Ү Һ І) are shown as a base letter plus a movement, for example **Ғ = Г + shake** and **Қ = К + shake**. That is how the Kazakh alphabet study by Mukhanov et al. (2024, Scientific Journal of Astana IT University) describes Ғ and Қ. The other movements are our choice. **І** is the little finger up.
+- **Ф, Ю, Я** cannot be told apart from other letters on a webcam, so they are recognised only after Teach mode.
+- The phrases use the app's own gestures, not official Kazakh Sign Language signs. They should be checked with Kazakh signers.
+
+`gestures.json` now holds one sign set per language: `{ "en": {...}, "kk": {...} }`. Inside each set the format is unchanged; the Kazakh set adds a `"teachOnly"` list.
+
 ## Run it
 
 You need Python 3.8 or newer, a webcam, and a free PostgreSQL database. **Nothing to download or install**:
@@ -129,7 +150,8 @@ db.execute("SELECT * FROM Users WHERE Username = %s", (username,))
 
 | File | What it is |
 |---|---|
-| `index.html`, `recognizer.js`, `gestures.json` | the app and its sign recognition |
+| `index.html`, `recognizer.js`, `gestures.json` | the app and its sign recognition (`gestures.json` has an English and a Kazakh sign set) |
+| `i18n.js` | the Kazakh interface texts |
 | `api.js` | how the page talks to the server |
 | `server.py` | web server + all database code |
 | `minipg.py` | built-in PostgreSQL connector: encrypted connection, password login, parameterized queries |
@@ -138,5 +160,5 @@ db.execute("SELECT * FROM Users WHERE Username = %s", (username,))
 | `database/erd.png`, `database/erd.mmd` | the ERD (image, and Mermaid source for mermaid.live) |
 | `database/screenshots/` | every query with its result, the data in each table, the table structure |
 | `data/dotacs-data-analysis.xlsx` | data analysis: sheet *Data* (accuracy per sign, first vs current version, and RecognitionLogs rows) and sheet *Analysis* (formulas, findings, chart) |
-| `bench/` | accuracy tests on simulated hands (needs Node.js): `node bench/noisy.mjs 60` gives 78.8% → 92.9%, `node bench/train.mjs` gives 91.0% → 99.4% after Teach mode. `old.mjs` is the first version, kept for comparison |
+| `bench/` | accuracy tests on simulated hands (needs Node.js). Kazakh: `node bench/kazakh.mjs 60` (held letters, 92.9%) and `node bench/kazakh_motion.mjs 20` (moving letters and phrases, 99.3%). English: `node bench/noisy.mjs 60` gives 78.8% → 92.9%, `node bench/train.mjs` gives 91.0% → 99.4% after Teach mode. `old.mjs` is the first version, kept for comparison |
 | `tests/test_server.py` | 17 tests (they erase the tables they use, so give them an empty test database: `TEST_DATABASE_URL=... python -m unittest discover tests`) |

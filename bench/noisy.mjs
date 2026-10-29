@@ -11,7 +11,7 @@ const per = {};
 for (const [name, pose] of Object.entries(POSES)) {
   per[name] = { old: 0, neu: 0, n: 0, oldWrong: {}, newWrong: {} };
   for (let s = 0; s < N; s++) {
-    const old = new OldEngine(json), eng = new SignEngine(JSON.parse(JSON.stringify(json)), JSON.parse(process.env.CFG || '{}'));
+    const old = new OldEngine(json.en || json), eng = new SignEngine(JSON.parse(JSON.stringify(json)), JSON.parse(process.env.CFG || '{}'));
     const P = buildHand(pose, { flex: LEVEL.flex, abd: LEVEL.abd, thumb: LEVEL.thumb });
     const base = pose.view || {};
     const view = { roll: (base.roll || 0) + rr(-18, 18) * LEVEL.rot, yaw: (base.yaw || 0) + rr(-25, 25) * LEVEL.rot,

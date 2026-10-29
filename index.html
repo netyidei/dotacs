@@ -261,6 +261,32 @@
       transition: opacity 0.5s;
     }
     .boot.gone { opacity: 0; pointer-events: none; }
+
+    /* language choice when the site opens */
+    .lang-pick {
+      position: fixed; inset: 0; z-index: 60;
+      display: grid; place-items: center; padding: 20px;
+      background: radial-gradient(circle at 50% 35%, #1a1f3d, #07080e 75%);
+      color: #fff;
+    }
+    .lang-pick[hidden] { display: none; }
+    .lang-card { display: grid; justify-items: center; gap: 14px; width: 100%; max-width: 580px; text-align: center; }
+    .lang-card h2 { margin: 6px 0 0; font-size: 1.55rem; line-height: 1.25; }
+    .lang-card p { margin: 0; color: rgba(255, 255, 255, 0.68); line-height: 1.45; }
+    .lang-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; margin-top: 6px; }
+    .lang-btns button {
+      display: grid; gap: 6px; align-content: start; text-align: left;
+      padding: 18px; border-radius: 16px; cursor: pointer; font: inherit; color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.06);
+      transition: border-color 0.15s, background 0.15s, transform 0.15s;
+    }
+    .lang-btns button:hover { border-color: var(--marigold); background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+    .lang-btns button[aria-current="true"] { border-color: var(--marigold); }
+    .lang-btns b { font-size: 1.35rem; }
+    .lang-btns span { font-size: 0.86rem; color: rgba(255, 255, 255, 0.72); line-height: 1.4; }
+    .lang-card .lang-note { font-size: 0.8rem; color: rgba(255, 255, 255, 0.5); }
+    .tool .lang-code { font-weight: 800; letter-spacing: 0.4px; }
+    @media (max-width: 560px) { .lang-btns { grid-template-columns: 1fr; } }
     .boot-card { display: grid; justify-items: center; gap: 18px; max-width: 380px; text-align: center; }
     .boot-logo {
       width: 54px; height: 54px;
@@ -733,10 +759,28 @@
 </head>
 <body>
 
+  <!-- language choice when the site opens (it is not translated: it shows both languages) -->
+  <div class="lang-pick" id="lang-pick" role="dialog" aria-modal="true" aria-labelledby="lang-title" data-no-i18n>
+    <div class="lang-card">
+      <div class="boot-logo"></div>
+      <h2 id="lang-title">Тілді таңдаңыз · Choose a language</h2>
+      <p>Белгілер мен интерфейс осы тілде болады<br>Signs and the interface follow this choice</p>
+      <div class="lang-btns">
+        <button type="button" data-lang="kk"><b>Қазақша</b><span>Қазақ дактиль әліпбиі (42 әріп) және 25 қазақша тіркес</span></button>
+        <button type="button" data-lang="en"><b>English</b><span>English letters (ASL-style), numbers and 29 words</span></button>
+      </div>
+      <p class="lang-note">Тілді кейін жоғарғы жолақтан ауыстыруға болады (L) · You can switch later in the top bar (L)</p>
+    </div>
+  </div>
+
   <header class="top">
     <div class="brand"><span class="mark"></span>dotacs<span class="tag">sign to speech</span></div>
     <div class="tools">
       <div id="status" data-tone="busy"><i></i><span>Loading...</span></div>
+      <button class="tool" id="btn-lang" title="Language (L)" aria-label="Language (L)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        <span class="lang-code" id="lang-code" data-no-i18n>ҚАЗ</span>
+      </button>
       <button class="tool" id="btn-practice" aria-pressed="false" title="Practice challenge (G)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
         <span class="lbl">Practice</span>
@@ -779,7 +823,7 @@
           <span class="chip" id="fps-chip" hidden><span>-- fps</span></span>
           <span class="chip" id="motion-chip" data-on="0"><i></i><span>Still</span></span>
         </div>
-        <div id="motion-toast" aria-hidden="true"></div>
+        <div id="motion-toast" aria-hidden="true" data-no-i18n></div>
 
         <div class="boot" id="boot">
           <div class="boot-card">
@@ -892,11 +936,11 @@
       </div>
 
       <div class="captions">
-        <div id="sentence" class="sentence" aria-live="polite"></div>
+        <div id="sentence" class="sentence" aria-live="polite" data-no-i18n></div>
       </div>
       <div class="suggest" id="suggest" hidden>
         <span>Finish the word:</span>
-        <div class="suggest-chips" id="suggest-chips"></div>
+        <div class="suggest-chips" id="suggest-chips" data-no-i18n></div>
       </div>
       <div class="actions">
         <button id="btn-speak" class="primary" title="Read the sentence aloud (Enter)">
@@ -1006,6 +1050,7 @@
           <dt><kbd>F</kbd></dt><dd>Presentation mode</dd>
           <dt><kbd>T</kbd></dt><dd>Light or dark theme</dd>
           <dt><kbd>M</kbd></dt><dd>Teach it your hands</dd>
+          <dt><kbd>L</kbd></dt><dd>Choose the language</dd>
           <dt><kbd>?</kbd></dt><dd>This panel</dd>
         </dl>
       </section>
@@ -1041,7 +1086,7 @@
         <table class="about-table">
           <tr><th>Data</th><th>Stored in</th><th>Status</th></tr>
           <tr><td>Camera picture</td><td>Nowhere: it never leaves your device</td><td><span class="st done">Working</span></td></tr>
-          <tr><td>Taught signs, settings, guest history</td><td>This browser (localStorage)</td><td><span class="st done">Working</span></td></tr>
+          <tr><td>Taught signs, settings, language, guest history</td><td>This browser (localStorage)</td><td><span class="st done">Working</span></td></tr>
           <tr><td>Accounts, sentences, scores, recognition logs</td><td>PostgreSQL: tables Users, Sentences, Scores, RecognitionLogs</td><td><span class="st" id="about-db-status">Checking...</span></td></tr>
         </table>
         <p class="note" id="about-db-note" style="margin-top: 10px"></p>
@@ -1054,7 +1099,9 @@
         <h3>Functions</h3>
         <table class="about-table">
           <tr><th>Function</th><th>Status</th></tr>
-          <tr><td>Sign to text: 54 letters, numbers and words, incl. moving and two-hand signs</td><td><span class="st done">Done</span></td></tr>
+          <tr><td>Sign to text: 54 English and 71 Kazakh signs (letters, numbers, words), incl. moving and two-hand signs</td><td><span class="st done">Done</span></td></tr>
+          <tr><td>Kazakh fingerspelling (42 letters) and 25 Kazakh phrases</td><td><span class="st part">Partly</span>: Ф, Ю and Я only after Teach mode; phrases still to be checked with Kazakh signers</td></tr>
+          <tr><td>Interface and voice in Kazakh or English</td><td><span class="st done">Done</span>: a Kazakh voice depends on the device (Russian is used if there is none)</td></tr>
           <tr><td>Read the sentence aloud (Speak)</td><td><span class="st done">Done</span></td></tr>
           <tr><td>Teach mode: learns your own hands</td><td><span class="st done">Done</span></td></tr>
           <tr><td>60-second practice game</td><td><span class="st done">Done</span></td></tr>
@@ -1062,7 +1109,7 @@
           <tr><td>Recognition logs for data analysis</td><td><span class="st done">Done</span> (needs our server)</td></tr>
           <tr><td>Use on a phone</td><td><span class="st part">Partly</span>: works in the browser; speed depends on the phone</td></tr>
           <tr><td>Taught signs on another computer</td><td><span class="st part">Partly</span>: by saving them to a file</td></tr>
-          <tr><td>Kazakh and Russian sign words</td><td><span class="st plan">Planned</span></td></tr>
+          <tr><td>Russian sign words</td><td><span class="st plan">Planned</span></td></tr>
           <tr><td>Whole sign-language sentences and grammar</td><td><span class="st plan">Planned</span></td></tr>
         </table>
       </section>
@@ -1146,6 +1193,7 @@
     import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
     import { SignEngine, SignModel, motionTemplate } from "./recognizer.js";
     import { api } from "./api.js";
+    import { setUiLanguage, t } from "./i18n.js";
 
     const $ = (id) => document.getElementById(id);
     const video = $("webcam");
@@ -1212,6 +1260,11 @@
     const settings = Object.assign({}, DEFAULTS, store.get("dotacs.settings", {}));
     const saveSettings = () => store.set("dotacs.settings", settings);
 
+    // language of the signs and the interface: "kk" (Kazakh) or "en" (English), chosen when the site opens
+    let lang = store.get("dotacs.lang", "kk") === "en" ? "en" : "kk";
+    let resolveLanguage;
+    const languageChosen = new Promise(r => { resolveLanguage = r; });
+
     // signed-in account; online = false when the server or database is not available
     const account = { online: false, user: null, bestByCategory: {} };
 
@@ -1274,7 +1327,7 @@
       try {
         const response = await fetch("gestures.json");
         if (!response.ok) throw new Error("HTTP " + response.status);
-        engine = new SignEngine(await response.json(), { leadHand: settings.leadHand }, model);
+        engine = new SignEngine(await response.json(), { leadHand: settings.leadHand, lang }, model);
         engine.debug = DEBUG;
         return true;
       } catch (err) {
@@ -1330,6 +1383,7 @@
         return;
       }
       setBoot("model", "done");
+      await languageChosen;   // the camera starts once the language is picked
       startWebcam();
     }
 
@@ -1414,8 +1468,8 @@
     let voices = [];
     function loadVoices() {
       if (!("speechSynthesis" in window)) return;
-      voices = speechSynthesis.getVoices().slice().sort((a, b) =>
-        (b.lang.startsWith("en") - a.lang.startsWith("en")) || a.name.localeCompare(b.name));
+      const rank = (v) => { const i = voiceFamilies().findIndex(f => v.lang.toLowerCase().startsWith(f)); return i < 0 ? 9 : i; };
+      voices = speechSynthesis.getVoices().slice().sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
       const sel = $("set-voice");
       sel.textContent = "";
       sel.add(new Option("System default", ""));
@@ -1427,12 +1481,25 @@
       speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
     }
 
+    // Kazakh text: a Kazakh voice, or a Russian one when the device has no Kazakh voice
+    function voiceFamilies() { return lang === "kk" ? ["kk", "ru"] : ["en"]; }
+    function voiceFor() {
+      const fits = (v) => v && voiceFamilies().some(f => v.lang.toLowerCase().startsWith(f));
+      const chosen = voices.find(x => x.voiceURI === settings.voice);
+      if (fits(chosen)) return chosen;
+      for (const f of voiceFamilies()) {
+        const v = voices.find(x => x.lang.toLowerCase().startsWith(f));
+        if (v) return v;
+      }
+      return null;
+    }
+
     function speak(text, queue = false) {
       if (!text || !("speechSynthesis" in window)) return;
       if (!queue) speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      const v = voices.find(x => x.voiceURI === settings.voice);
-      if (v) { u.voice = v; u.lang = v.lang; }
+      const v = voiceFor();
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === "kk" ? "kk-KZ" : "en-US";
       u.rate = +settings.rate || 1;
       u.onstart = () => sentenceEl.classList.add("speaking");
       u.onend = u.onerror = () => sentenceEl.classList.remove("speaking");
@@ -1568,7 +1635,7 @@
       if (!words.length && !spelling) {
         const p = document.createElement("span");
         p.className = "placeholder";
-        p.textContent = "Spell a word or sign a phrase. Hold each sign for a moment.";
+        p.textContent = t("Spell a word or sign a phrase. Hold each sign for a moment.");
         sentenceEl.appendChild(p);
       } else {
         words.forEach((w, i) => {
@@ -1662,7 +1729,7 @@
     // ------------------------------------------------------------------
     // Word suggestions while spelling
     // ------------------------------------------------------------------
-    const WORDS = [...new Set((
+    const WORDS_EN = [...new Set((
       "the i you to and a it is my me we hello hi yes no please thank thanks sorry help good bad love " +
       "friend friends family mom dad home school class teacher student water food eat drink hungry thirsty " +
       "happy sad tired sick angry name what where when who why how can want need like go come stop wait " +
@@ -1675,13 +1742,25 @@
       "from your his her our their they he she bye welcome birthday party music movie tea coffee bread " +
       "apple milk juice dog cat house room door window table chair bed city country world"
     ).split(" "))];
+    const WORDS_KK = [...new Set((
+      "мен сен сіз ол біз олар менің сенің сіздің оның біздің иә жоқ сәлем сәлеметсіз рақмет кешіріңіз " +
+      "өтінемін көмек көмектесіңіз жақсы жаман көремін дос достар отбасы ана әке апа аға іні әпке сіңлі бала " +
+      "үй мектеп сынып мұғалім оқушы студент университет су тамақ нан шай сүт кофе шырын алма ішу жеу аш " +
+      "қуанышты мұңды шаршадым ауырамын есім атым не қайда қашан кім неге қалай қанша керек қалаймын бар " +
+      "бару келу кел келіңіз тоқта күт тағы бітті қайта қазір кейін бүгін ертең кеше таңертең кешке түн " +
+      "күн уақыт жұмыс ойын ойнайық кітап оқу жазу үйрену белгі тіл саңырау есту көру сөйлесу телефон " +
+      "нөмір жарайды жарайсың керемет қызық доп автобус көлік жүру отыру тұру ашу жабу дәретхана дәрігер " +
+      "аурухана дәрі ақша дүкен үлкен кішкентай ыстық суық жаңа ескі ер әйел ұл қыз адам компьютер жоба " +
+      "сұрақ жауап түсінемін білемін ойлаймын мүмкін рас өте көп барлық осы сол мұнда онда бірге үшін " +
+      "сау болыңыз туған музыка ит мысық бөлме есік терезе үстел орындық қала ел әлем қазақстан астана алматы"
+    ).split(" "))];
     let suggestions = [];
 
     function updateSuggestions() {
       const box = $("suggest"), chips = $("suggest-chips");
       const pre = sentence.spelling.toLowerCase();
       suggestions = (!settings.suggest || game.active || !pre || /\d/.test(pre))
-        ? [] : WORDS.filter(w => w.length > pre.length && w.startsWith(pre)).slice(0, 3);
+        ? [] : (lang === "kk" ? WORDS_KK : WORDS_EN).filter(w => w.length > pre.length && w.startsWith(pre)).slice(0, 3);
       box.hidden = !suggestions.length;
       chips.textContent = "";
       suggestions.forEach((w, i) => {
@@ -1729,7 +1808,7 @@
     }
     $("hist-clear").addEventListener("click", async () => {
       if (account.user) {
-        if (!confirm("Delete all your saved sentences from your account?")) return;
+        if (!confirm(t("Delete all your saved sentences from your account?"))) return;
         const r = await api.clearSentences();
         if (!r.ok) { syncProblem(r); return; }
       } else {
@@ -1774,6 +1853,14 @@
     // ------------------------------------------------------------------
     // Sign guide
     // ------------------------------------------------------------------
+    // Kazakh letters in alphabet order; everything else by the language's normal order
+    const KK_ORDER = "АӘБВГҒДЕЁЖЗИЙКҚЛМНҢОӨПРСТУҰҮФХҺЦЧШЩЪЫІЬЭЮЯ";
+    function bySay(a, b) {
+      const ia = KK_ORDER.indexOf(a.say), ib = KK_ORDER.indexOf(b.say);
+      if (a.say.length === 1 && b.say.length === 1 && ia >= 0 && ib >= 0) return ia - ib;
+      return a.say.localeCompare(b.say, lang, { numeric: true });
+    }
+
     let guideTab = "letters";
     let guideQuery = "";
     let guideItems = [];
@@ -1799,7 +1886,7 @@
         .filter(i => !q || i.say.toLowerCase().includes(q) || (i.hint || "").toLowerCase().includes(q));
       if (guideTab === "letters") {
         list.sort((a, b) => (a.kind === b.kind
-          ? a.say.localeCompare(b.say, undefined, { numeric: true })
+          ? bySay(a, b)
           : a.kind === "letter" ? -1 : 1));
       }
       if (!list.length) {
@@ -1982,7 +2069,8 @@
     const bestFor = (pool) => (account.user ? (account.bestByCategory[pool] || 0) : store.get("dotacs.best." + pool, 0));
 
     function poolItems(pool = game.pool) {
-      return guideItems.filter(i => pool === "all" || (pool === "words" ? i.kind === "word" : i.kind !== "word"));
+      return guideItems.filter(i => (pool === "all" || (pool === "words" ? i.kind === "word" : i.kind !== "word")) &&
+        !(i.rule && i.rule.teachOnly && !model.has(i.say)));
     }
 
     function renderPool() {
@@ -2245,7 +2333,7 @@
       const list = guideItems.filter(i => teachable(i) &&
         (pool === "all" || (pool === "words" ? i.kind === "word" : i.kind !== "word")));
       const order = (i) => (i.kind === "letter" ? 0 : i.kind === "number" ? 1 : 2);
-      return list.sort((a, b) => order(a) - order(b) || a.say.localeCompare(b.say, undefined, { numeric: true }));
+      return list.sort((a, b) => order(a) - order(b) || bySay(a, b));
     }
 
     function renderTeachIntro() {
@@ -2439,11 +2527,11 @@
         model.load(json);
         saveModel();
       } catch (err) {
-        alert("That file could not be loaded. Choose a file saved from dotacs (dotacs-my-signs.json).");
+        alert(t("That file could not be loaded. Choose a file saved from dotacs (dotacs-my-signs.json)."));
       }
     });
     $("model-forget").addEventListener("click", () => {
-      if (!confirm("Forget all the signs you taught? This cannot be undone.")) return;
+      if (!confirm(t("Forget all the signs you taught? This cannot be undone."))) return;
       model.clear();
       saveModel();
     });
@@ -2759,7 +2847,7 @@
     // Keyboard
     // ------------------------------------------------------------------
     document.addEventListener("keydown", (e) => {
-      if (document.querySelector("dialog[open]")) return;
+      if (document.querySelector("dialog[open]") || !langPick.hidden) return;
       const t = e.target;
       if (t instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) {
         if (e.key === "Escape" && t.id === "guide-search") { t.value = ""; guideQuery = ""; renderGuide(); t.blur(); }
@@ -2775,6 +2863,7 @@
       if (k === "f" || k === "F") { toggleFullscreen(); return; }
       if (k === "g" || k === "G") { $("btn-practice").click(); return; }
       if (k === "m" || k === "M") { $("btn-teach").click(); return; }
+      if (k === "l" || k === "L") { openLanguagePicker(); return; }
 
       if (game.active) {
         if (k === "Escape") closeGame();
@@ -2983,6 +3072,8 @@
           drawHoldRing(out.lead);
           setChip(handChip, true, out.active.length === 2 ? "2 hands" : "1 hand");
           setChip(motionChip, out.moving, out.moving ? "Moving" : "Still");
+          // a moving letter (Ә, Қ, Ң, J, Z ...) takes a while: the pause that ends a word starts when the hand stops
+          if (out.moving && sentence.spelling) sentence.lastSpellAt = Math.max(sentence.lastSpellAt, performance.now());
         }
 
         teachTick(now, out);
@@ -2994,9 +3085,50 @@
     // ------------------------------------------------------------------
     // Start
     // ------------------------------------------------------------------
+    // ------------------------------------------------------------------
+    // Language: Kazakh or English signs and interface
+    // ------------------------------------------------------------------
+    const langPick = $("lang-pick");
+    function openLanguagePicker() {
+      langPick.hidden = false;
+      langPick.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-current", String(b.dataset.lang === lang)));
+      langPick.querySelector(`[data-lang="${lang}"]`).focus({ preventScroll: true });
+    }
+    function applyLanguage(next) {
+      lang = next === "en" ? "en" : "kk";
+      store.set("dotacs.lang", lang);
+      setUiLanguage(lang);
+      $("lang-code").textContent = lang === "kk" ? "ҚАЗ" : "EN";
+      if (engine && engine.lang !== lang) {
+        if (game.active) closeGame();
+        engine.setLanguage(lang);
+        hold.label = null; shownState = null; shownRule = null;
+        sentence.spelling = "";
+        buildGuide();
+        renderSentence();
+      }
+      loadVoices();
+      updateSuggestions();
+    }
+    function chooseLanguage(next) {
+      applyLanguage(next);
+      langPick.hidden = true;
+      resolveLanguage();
+    }
+    langPick.querySelectorAll("[data-lang]").forEach(b => b.addEventListener("click", () => chooseLanguage(b.dataset.lang)));
+    langPick.addEventListener("keydown", (e) => {
+      const btns = [...langPick.querySelectorAll("[data-lang]")];
+      const i = btns.indexOf(document.activeElement);
+      if (e.key === "Escape") { e.preventDefault(); chooseLanguage(lang); }
+      else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key)) { e.preventDefault(); btns[(i + 1) % btns.length].focus(); }
+    });
+    $("btn-lang").addEventListener("click", openLanguagePicker);
+
     applySettings();
     syncSettingsUI();
     updateModelNote();
+    applyLanguage(lang);
+    openLanguagePicker();
     renderGuide();
     renderSentence();
     initAccount();

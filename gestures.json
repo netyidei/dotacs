@@ -1,187 +1,245 @@
 {
-  "*": [
-    { "when": { "shape": "curved", "touch": "index" }, "label": "O", "say": "O", "kind": "letter", "hint": "Fingers curved, thumb touching index tip" },
-    { "when": { "shape": "curved", "thumbPos": ["side", "out"] }, "label": "C", "say": "C", "kind": "letter", "hint": "Curved hand, as if holding a cup" },
-    { "when": { "hookIndex": true }, "label": "X", "say": "X", "kind": "letter", "hint": "Fist with the index finger hooked" }
-  ],
+  "_about": "Two sign sets: en = English letters and words (ASL-style), kk = Kazakh fingerspelling (42 letters) and Kazakh phrases. The app picks one with the language switch.",
+  "en": {
+    "*": [
+      {"when": {"shape": "curved", "touch": "index"}, "label": "O", "say": "O", "kind": "letter", "hint": "Fingers curved, thumb touching index tip"},
+      {"when": {"shape": "curved", "thumbPos": ["side", "out"]}, "label": "C", "say": "C", "kind": "letter", "hint": "Curved hand, as if holding a cup"},
+      {"when": {"hookIndex": true}, "label": "X", "say": "X", "kind": "letter", "hint": "Fist with the index finger hooked"}
+    ],
 
-  "[1, 1, 1, 1, 1]": { "label": "Paper / 5", "say": "5", "kind": "number", "hint": "Open hand, fingers spread" },
+    "[1, 1, 1, 1, 1]": {"label": "Paper / 5", "say": "5", "kind": "number", "hint": "Open hand, fingers spread"},
 
-  "[0, 0, 0, 0, 0]": { "label": "Rock / Fist / S", "say": "S", "kind": "letter", "hint": "Closed fist, thumb across the fingers" },
+    "[0, 0, 0, 0, 0]": {"label": "Rock / Fist / S", "say": "S", "kind": "letter", "hint": "Closed fist, thumb across the fingers"},
 
-  "[1, 0, 0, 0, 0]": [
-    { "when": { "thumbPos": "out", "thumbDir": "up" }, "label": "Thumbs Up / Good", "say": "Good", "kind": "word", "hint": "Thumb up" },
-    { "when": { "thumbPos": "out", "thumbDir": "down" }, "label": "Thumbs Down / Bad", "say": "Bad", "kind": "word", "hint": "Thumb down" },
-    { "when": { "thumbPos": "side" }, "label": "A", "say": "A", "kind": "letter", "hint": "Fist with the thumb alongside" }
-  ],
+    "[1, 0, 0, 0, 0]": [
+      {"when": {"thumbPos": "out", "thumbDir": "up"}, "label": "Thumbs Up / Good", "say": "Good", "kind": "word", "hint": "Thumb up"},
+      {"when": {"thumbPos": "out", "thumbDir": "down"}, "label": "Thumbs Down / Bad", "say": "Bad", "kind": "word", "hint": "Thumb down"},
+      {"when": {"thumbPos": "side"}, "label": "A", "say": "A", "kind": "letter", "hint": "Fist with the thumb alongside"}
+    ],
 
-  "[0, 1, 0, 0, 0]": [
-    { "when": { "touch": "middle" }, "label": "D", "say": "D", "kind": "letter", "hint": "Index up, thumb touching the middle finger" },
-    { "label": "Number 1", "say": "1", "kind": "number", "hint": "Index finger up" }
-  ],
+    "[0, 1, 0, 0, 0]": [
+      {"when": {"touch": "middle"}, "label": "D", "say": "D", "kind": "letter", "hint": "Index up, thumb touching the middle finger"},
+      {"label": "Number 1", "say": "1", "kind": "number", "hint": "Index finger up"}
+    ],
 
-  "[1, 1, 0, 0, 0]": [
-    { "when": { "touch": "middle" }, "label": "D", "say": "D", "kind": "letter", "hint": "Index up, thumb touching the middle finger" },
-    { "when": { "indexDir": "up", "thumbDir": "side" }, "label": "L", "say": "L", "kind": "letter", "hint": "Index up, thumb out to the side" },
-    { "when": { "indexDir": "side" }, "label": "G", "say": "G", "kind": "letter", "hint": "Index and thumb pointing sideways" },
-    { "when": { "indexDir": "up" }, "label": "Number 1", "say": "1", "kind": "number", "hint": "Index finger up" }
-  ],
+    "[1, 1, 0, 0, 0]": [
+      {"when": {"touch": "middle"}, "label": "D", "say": "D", "kind": "letter", "hint": "Index up, thumb touching the middle finger"},
+      {"when": {"indexDir": "up", "thumbDir": "side"}, "label": "L", "say": "L", "kind": "letter", "hint": "Index up, thumb out to the side"},
+      {"when": {"indexDir": "side"}, "label": "G", "say": "G", "kind": "letter", "hint": "Index and thumb pointing sideways"},
+      {"when": {"indexDir": "up"}, "label": "Number 1", "say": "1", "kind": "number", "hint": "Index finger up"}
+    ],
 
-  "[0, 1, 1, 0, 0]": [
-    { "when": { "thumbBetween": true }, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them" },
-    { "when": { "spread": "together", "indexDir": "side" }, "label": "H", "say": "H", "kind": "letter", "hint": "Index and middle together, pointing sideways" },
-    { "when": { "spread": "together" }, "label": "U", "say": "U", "kind": "letter", "hint": "Index and middle up, together" },
-    { "label": "Peace / V / 2", "say": "V", "kind": "letter", "hint": "Index and middle up, apart" }
-  ],
+    "[0, 1, 1, 0, 0]": [
+      {"when": {"thumbBetween": true}, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them"},
+      {"when": {"spread": "together", "indexDir": "side"}, "label": "H", "say": "H", "kind": "letter", "hint": "Index and middle together, pointing sideways"},
+      {"when": {"spread": "together"}, "label": "U", "say": "U", "kind": "letter", "hint": "Index and middle up, together"},
+      {"label": "Peace / V / 2", "say": "V", "kind": "letter", "hint": "Index and middle up, apart"}
+    ],
 
-  "[1, 1, 1, 0, 0]": [
-    { "when": { "thumbBetween": true }, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them" },
-    { "label": "Number 3", "say": "3", "kind": "number", "hint": "Thumb, index and middle out" }
-  ],
+    "[1, 1, 1, 0, 0]": [
+      {"when": {"thumbBetween": true}, "label": "K", "say": "K", "kind": "letter", "hint": "Index and middle up and apart, thumb up between them"},
+      {"label": "Number 3", "say": "3", "kind": "number", "hint": "Thumb, index and middle out"}
+    ],
 
-  "[0, 1, 1, 1, 0]": { "label": "W", "say": "W", "kind": "letter", "hint": "Three middle fingers up, thumb holds the pinky" },
+    "[0, 1, 1, 1, 0]": {"label": "W", "say": "W", "kind": "letter", "hint": "Three middle fingers up, thumb holds the pinky"},
 
-  "[0, 1, 1, 1, 1]": [
-    { "when": { "spread": "apart" }, "label": "Number 4", "say": "4", "kind": "number", "hint": "Four fingers up and apart, thumb folded" },
-    { "label": "B", "say": "B", "kind": "letter", "hint": "Flat hand, fingers together, thumb across the palm" }
-  ],
+    "[0, 1, 1, 1, 1]": [
+      {"when": {"spread": "apart"}, "label": "Number 4", "say": "4", "kind": "number", "hint": "Four fingers up and apart, thumb folded"},
+      {"label": "B", "say": "B", "kind": "letter", "hint": "Flat hand, fingers together, thumb across the palm"}
+    ],
 
-  "[0, 0, 1, 1, 1]": [
-    { "when": { "touch": "index" }, "label": "F / OK / 9", "say": "F", "kind": "letter", "hint": "Thumb touches index tip, other fingers up" }
-  ],
+    "[0, 0, 1, 1, 1]": [
+      {"when": {"touch": "index"}, "label": "F / OK / 9", "say": "F", "kind": "letter", "hint": "Thumb touches index tip, other fingers up"}
+    ],
 
-  "[0, 1, 1, 0, 1]": [
-    { "when": { "touch": "ring" }, "label": "Number 7", "say": "7", "kind": "number", "hint": "Thumb touches the ring finger, others up" }
-  ],
+    "[0, 1, 1, 0, 1]": [
+      {"when": {"touch": "ring"}, "label": "Number 7", "say": "7", "kind": "number", "hint": "Thumb touches the ring finger, others up"}
+    ],
 
-  "[0, 1, 0, 1, 1]": [
-    { "when": { "touch": "middle" }, "label": "Number 8", "say": "8", "kind": "number", "hint": "Thumb touches the middle finger, others up" }
-  ],
+    "[0, 1, 0, 1, 1]": [
+      {"when": {"touch": "middle"}, "label": "Number 8", "say": "8", "kind": "number", "hint": "Thumb touches the middle finger, others up"}
+    ],
 
-  "[0, 0, 0, 0, 1]": { "label": "I", "say": "I", "kind": "letter", "hint": "Fist with the pinky up" },
+    "[0, 0, 0, 0, 1]": {"label": "I", "say": "I", "kind": "letter", "hint": "Fist with the pinky up"},
 
-  "[1, 0, 0, 0, 1]": { "label": "Hang Loose / Y", "say": "Y", "kind": "letter", "hint": "Thumb and pinky out" },
+    "[1, 0, 0, 0, 1]": {"label": "Hang Loose / Y", "say": "Y", "kind": "letter", "hint": "Thumb and pinky out"},
 
-  "[1, 1, 0, 0, 1]": { "label": "I Love You", "say": "I love you", "kind": "word", "hint": "Thumb, index and pinky out" },
+    "[1, 1, 0, 0, 1]": {"label": "I Love You", "say": "I love you", "kind": "word", "hint": "Thumb, index and pinky out"},
 
-  "[0, 1, 0, 0, 1]": { "label": "Rock On", "say": "Rock on", "kind": "word", "hint": "Index and pinky up, thumb across" },
+    "[0, 1, 0, 0, 1]": {"label": "Rock On", "say": "Rock on", "kind": "word", "hint": "Index and pinky up, thumb across"},
 
-  "motions": [
-    {
-      "label": "J", "say": "J", "kind": "letter",
-      "track": "pinky",
-      "when": { "hand": ["I"] },
-      "path": [[0.7, 0.0], [0.7, 0.6], [0.62, 0.85], [0.4, 1.0], [0.15, 0.9], [0.05, 0.7]],
-      "hint": "Pinky up (I), draw a J in the air"
-    },
-    {
-      "label": "Z", "say": "Z", "kind": "letter",
-      "track": "index",
-      "when": { "hand": ["1", "D", "G", "L"] },
-      "path": [[0, 0], [1, 0], [0, 1], [1, 1]],
-      "hint": "Index finger, draw a Z in the air"
-    },
+    "motions": [
+      {"label": "J", "say": "J", "kind": "letter", "track": "pinky", "when": {"hand": ["I"]}, "path": [[0.7, 0.0], [0.7, 0.6], [0.62, 0.85], [0.4, 1.0], [0.15, 0.9], [0.05, 0.7]], "hint": "Pinky up (I), draw a J in the air"},
+      {"label": "Z", "say": "Z", "kind": "letter", "track": "index", "when": {"hand": ["1", "D", "G", "L"]}, "path": [[0, 0], [1, 0], [0, 1], [1, 1]], "hint": "Index finger, draw a Z in the air"},
+      {"label": "Hello", "say": "Hello", "kind": "word", "when": {"motion": "waveX", "hand": ["5", "B", "4"]}, "hint": "Open hand, wave side to side"},
+      {"label": "Bye", "say": "Bye", "kind": "word", "when": {"flap": "all"}, "hint": "Open hand, fold and open the fingers twice"},
+      {"label": "Come", "say": "Come", "kind": "word", "when": {"flap": "index"}, "hint": "Index finger curls toward you twice"},
+      {"label": "Yes", "say": "Yes", "kind": "word", "when": {"motion": "shakeY", "hand": ["S", "A", "X"]}, "hint": "Fist nods up and down"},
+      {"label": "No", "say": "No", "kind": "word", "when": {"motion": "waveX", "hand": ["1", "D"]}, "hint": "Index finger wags side to side"},
+      {"label": "Please", "say": "Please", "kind": "word", "when": {"motion": "circle", "hand": ["B", "5", "4"]}, "hint": "Flat hand circles in front of your chest"},
+      {"label": "Sorry", "say": "Sorry", "kind": "word", "when": {"motion": "circle", "hand": ["S", "A", "X"]}, "hint": "Fist circles in front of your chest"},
+      {"label": "Thank you", "say": "Thank you", "kind": "word", "when": {"motion": "swipeDown", "hand": ["B", "5", "4"]}, "hint": "Flat hand sweeps down and out from your chin"},
+      {"label": "Water", "say": "Water", "kind": "word", "when": {"motion": "shakeY", "hand": ["W"]}, "hint": "W hand taps down twice"},
+      {"label": "Eat", "say": "Eat", "kind": "word", "when": {"motion": "shakeY", "hand": ["O", "F", "C"]}, "hint": "Fingertips together, tap toward your mouth twice"},
+      {"label": "Drink", "say": "Drink", "kind": "word", "when": {"motion": "swipeUp", "hand": ["C"]}, "hint": "C hand lifts up as if holding a cup"},
+      {"label": "Hungry", "say": "Hungry", "kind": "word", "when": {"motion": "swipeDown", "hand": ["C"]}, "hint": "C hand slides down your chest"},
+      {"label": "Who", "say": "Who", "kind": "word", "when": {"motion": "circle", "hand": ["1", "D"]}, "hint": "Index finger circles"},
+      {"label": "Call me", "say": "Call me", "kind": "word", "when": {"motion": ["waveX", "shakeY"], "hand": ["Y"]}, "hint": "Y hand, shake it like a phone"}
+    ],
 
-    { "label": "Hello", "say": "Hello", "kind": "word",
-      "when": { "motion": "waveX", "hand": ["5", "B", "4"] },
-      "hint": "Open hand, wave side to side" },
+    "pairs": [
+      {"label": "6-7", "say": "67", "kind": "word", "when": {"pairMotion": "alternate"}, "hint": "Two hands out, palms up: one rises while the other drops, back and forth"},
+      {"label": "Clap", "say": "Clap", "kind": "word", "when": {"pairMotion": "clap"}, "hint": "Bring both hands together and apart twice"},
+      {"label": "Big", "say": "Big", "kind": "word", "when": {"pairMotion": "apart", "left": ["L"], "right": ["L"]}, "hint": "Two L hands, pull them apart"},
+      {"label": "Book", "say": "Book", "kind": "word", "when": {"pairMotion": "apart", "left": ["B", "5"], "right": ["B", "5"]}, "hint": "Two flat hands touching, open them like a book"},
+      {"label": "Small", "say": "Small", "kind": "word", "when": {"pairMotion": "together", "left": ["B", "5"], "right": ["B", "5"]}, "hint": "Two flat hands, bring them closer together"},
+      {"label": "Pray", "say": "Pray", "kind": "word", "when": {"left": ["B", "5"], "right": ["B", "5"], "gap": "overlap"}, "hint": "Palms pressed together, fingers up"},
+      {"label": "More", "say": "More", "kind": "word", "when": {"left": ["O", "F", "C"], "right": ["O", "F", "C"], "gap": ["near", "overlap"]}, "hint": "Both hands in an O, fingertips together"},
+      {"label": "Love", "say": "Love", "kind": "word", "when": {"left": ["S", "A"], "right": ["S", "A"], "gap": ["near", "overlap"]}, "hint": "Two fists crossed over your chest"},
+      {"label": "Help", "say": "Help", "kind": "word", "when": {"left": ["S", "A"], "right": ["B", "5"], "gap": ["near", "overlap"]}, "hint": "Fist resting on a flat palm"},
+      {"label": "Friend", "say": "Friend", "kind": "word", "when": {"left": ["X"], "right": ["X"], "gap": ["near", "overlap"]}, "hint": "Both index fingers hooked together"},
+      {"label": "Play", "say": "Play", "kind": "word", "when": {"left": ["Y"], "right": ["Y"], "gap": ["near", "far"]}, "hint": "Both hands in a Y (thumb and pinky out)"}
+    ]
+  },
 
-    { "label": "Bye", "say": "Bye", "kind": "word",
-      "when": { "flap": "all" },
-      "hint": "Open hand, fold and open the fingers twice" },
+  "kk": {
+    "*": [
+      {"when": {"shape": "curved", "touch": "index"}, "label": "О", "say": "О", "kind": "letter", "hint": "Саусақтар дөңгеленіп, бас бармақпен «О» сақинасын жасайды"},
+      {"when": {"shape": "curved", "thumbPos": ["side", "out"]}, "label": "С", "say": "С", "kind": "letter", "hint": "Саусақтар жарты шеңбер жасайды, кесе ұстағандай"},
+      {"when": {"hookIndex": true}, "label": "Х", "say": "Х", "kind": "letter", "hint": "Жұдырық, сұқ саусақ ілмек сияқты бүгулі"}
+    ],
 
-    { "label": "Come", "say": "Come", "kind": "word",
-      "when": { "flap": "index" },
-      "hint": "Index finger curls toward you twice" },
+    "[1, 1, 1, 1, 1]": [
+      {"when": {"touch": ["index", "middle"]}, "label": "Ж", "say": "Ж", "kind": "letter", "hint": "Түзу саусақтар алақаннан 90° бүгіліп, бас бармаққа тиеді"},
+      {"label": "5", "say": "5", "kind": "number", "hint": "Ашық алақан, саусақтар алшақ"}
+    ],
 
-    { "label": "Yes", "say": "Yes", "kind": "word",
-      "when": { "motion": "shakeY", "hand": ["S", "A", "X"] },
-      "hint": "Fist nods up and down" },
+    "[0, 1, 1, 1, 1]": [
+      {"when": {"touch": ["index", "middle"]}, "label": "Ж", "say": "Ж", "kind": "letter", "hint": "Түзу саусақтар алақаннан 90° бүгіліп, бас бармаққа тиеді"},
+      {"when": {"spread": "apart"}, "label": "4", "say": "4", "kind": "number", "hint": "Төрт саусақ жоғары, алшақ, бас бармақ бүгулі"},
+      {"label": "В", "say": "В", "kind": "letter", "hint": "Алақан ашық, саусақтар жабысқан, бас бармақ алақанға басылған"}
+    ],
 
-    { "label": "No", "say": "No", "kind": "word",
-      "when": { "motion": "waveX", "hand": ["1", "D"] },
-      "hint": "Index finger wags side to side" },
+    "[0, 0, 0, 0, 0]": {"label": "Е", "say": "Е", "kind": "letter", "hint": "Саусақтар бүгіліп, бас бармаққа тиеді (шоқ)"},
 
-    { "label": "Please", "say": "Please", "kind": "word",
-      "when": { "motion": "circle", "hand": ["B", "5", "4"] },
-      "hint": "Flat hand circles in front of your chest" },
+    "[1, 0, 0, 0, 0]": [
+      {"when": {"thumbPos": "out", "thumbDir": "up"}, "label": "Жақсы", "say": "Жақсы", "kind": "word", "hint": "Бас бармақ жоғары"},
+      {"when": {"thumbPos": "out", "thumbDir": "down"}, "label": "Жаман", "say": "Жаман", "kind": "word", "hint": "Бас бармақ төмен"},
+      {"when": {"thumbPos": "side"}, "label": "А", "say": "А", "kind": "letter", "hint": "Жұдырық, бас бармақ жанында тік тұрады"}
+    ],
 
-    { "label": "Sorry", "say": "Sorry", "kind": "word",
-      "when": { "motion": "circle", "hand": ["S", "A", "X"] },
-      "hint": "Fist circles in front of your chest" },
+    "[0, 1, 0, 0, 0]": [
+      {"when": {"indexDir": "down"}, "label": "Г", "say": "Г", "kind": "letter", "hint": "Қол төмен қарайды: сұқ саусақ төмен, бас бармақ бүйірге"},
+      {"label": "1", "say": "1", "kind": "number", "hint": "Сұқ саусақ жоғары"}
+    ],
 
-    { "label": "Thank you", "say": "Thank you", "kind": "word",
-      "when": { "motion": "swipeDown", "hand": ["B", "5", "4"] },
-      "hint": "Flat hand sweeps down and out from your chin" },
+    "[1, 1, 0, 0, 0]": [
+      {"when": {"indexDir": "down"}, "label": "Г", "say": "Г", "kind": "letter", "hint": "Қол төмен қарайды: сұқ саусақ төмен, бас бармақ бүйірге"},
+      {"when": {"indexDir": "up", "thumbDir": "side"}, "label": "Ь", "say": "Ь", "kind": "letter", "hint": "Сұқ саусақ жоғары, бас бармақ бүйірге"},
+      {"when": {"indexDir": "side"}, "label": "Э", "say": "Э", "kind": "letter", "hint": "Бас бармақ пен сұқ саусақ жарты шеңбер жасайды, қол бүйірге қарайды"},
+      {"when": {"indexDir": "up"}, "label": "1", "say": "1", "kind": "number", "hint": "Сұқ саусақ жоғары"}
+    ],
 
-    { "label": "Water", "say": "Water", "kind": "word",
-      "when": { "motion": "shakeY", "hand": ["W"] },
-      "hint": "W hand taps down twice" },
+    "[0, 1, 1, 0, 0]": [
+      {"when": {"touch": ["index", "middle"]}, "label": "Ч", "say": "Ч", "kind": "letter", "hint": "Сұқ және ортан саусақ 90° бүгіліп, бас бармаққа тиеді"},
+      {"when": {"indexDir": "down", "spread": "apart"}, "label": "Л", "say": "Л", "kind": "letter", "hint": "Қол төмен: сұқ және ортан саусақ төмен, алшақ"},
+      {"when": {"indexDir": "down"}, "label": "П", "say": "П", "kind": "letter", "hint": "Қол төмен: сұқ және ортан саусақ төмен, бірге"},
+      {"when": {"thumbBetween": true}, "label": "К", "say": "К", "kind": "letter", "hint": "Сұқ және ортан саусақ жоғары, алшақ"},
+      {"when": {"spread": "together"}, "label": "Б", "say": "Б", "kind": "letter", "hint": "Сұқ және ортан саусақ жоғары, бірге (ортан саусақтың ұшы сәл бүгулі)"},
+      {"label": "К", "say": "К", "kind": "letter", "hint": "Сұқ және ортан саусақ жоғары, алшақ"}
+    ],
 
-    { "label": "Eat", "say": "Eat", "kind": "word",
-      "when": { "motion": "shakeY", "hand": ["O", "F", "C"] },
-      "hint": "Fingertips together, tap toward your mouth twice" },
+    "[1, 1, 1, 0, 0]": [
+      {"when": {"touch": ["index", "middle"]}, "label": "Ч", "say": "Ч", "kind": "letter", "hint": "Сұқ және ортан саусақ 90° бүгіліп, бас бармаққа тиеді"},
+      {"when": {"indexDir": "down", "spread": "apart"}, "label": "Л", "say": "Л", "kind": "letter", "hint": "Қол төмен: сұқ және ортан саусақ төмен, алшақ"},
+      {"when": {"indexDir": "down"}, "label": "П", "say": "П", "kind": "letter", "hint": "Қол төмен: сұқ және ортан саусақ төмен, бірге"},
+      {"when": {"thumbBetween": true}, "label": "К", "say": "К", "kind": "letter", "hint": "Сұқ және ортан саусақ жоғары, алшақ"},
+      {"label": "3", "say": "3", "kind": "number", "hint": "Бас бармақ, сұқ және ортан саусақ шығып тұрады"}
+    ],
 
-    { "label": "Drink", "say": "Drink", "kind": "word",
-      "when": { "motion": "swipeUp", "hand": ["C"] },
-      "hint": "C hand lifts up as if holding a cup" },
+    "[0, 1, 1, 1, 0]": [
+      {"when": {"indexDir": "down", "spread": "apart"}, "label": "М", "say": "М", "kind": "letter", "hint": "Қол төмен: үш саусақ төмен, алшақ, бас бармақ шынашақты ұстайды"},
+      {"when": {"indexDir": "down"}, "label": "Т", "say": "Т", "kind": "letter", "hint": "Қол төмен: үш саусақ төмен, бірге, бас бармақ шынашақты ұстайды"},
+      {"label": "Ш", "say": "Ш", "kind": "letter", "hint": "Үш саусақ жоғары, бас бармақ шынашақты ұстайды"}
+    ],
 
-    { "label": "Hungry", "say": "Hungry", "kind": "word",
-      "when": { "motion": "swipeDown", "hand": ["C"] },
-      "hint": "C hand slides down your chest" },
+    "[1, 1, 1, 1, 0]": [
+      {"when": {"indexDir": "down", "spread": "apart"}, "label": "М", "say": "М", "kind": "letter", "hint": "Қол төмен: үш саусақ төмен, алшақ, бас бармақ шынашақты ұстайды"},
+      {"when": {"indexDir": "down"}, "label": "Т", "say": "Т", "kind": "letter", "hint": "Қол төмен: үш саусақ төмен, бірге, бас бармақ шынашақты ұстайды"},
+      {"label": "Ш", "say": "Ш", "kind": "letter", "hint": "Үш саусақ жоғары, бас бармақ шынашақты ұстайды"}
+    ],
 
-    { "label": "Who", "say": "Who", "kind": "word",
-      "when": { "motion": "circle", "hand": ["1", "D"] },
-      "hint": "Index finger circles" },
+    "[0, 0, 1, 1, 1]": [
+      {"when": {"touch": "index"}, "label": "О", "say": "О", "kind": "letter", "hint": "Бас бармақ пен сұқ саусақ сақина жасайды, қалған саусақтар түзу"}
+    ],
 
-    { "label": "Call me", "say": "Call me", "kind": "word",
-      "when": { "motion": ["waveX", "shakeY"], "hand": ["Y"] },
-      "hint": "Y hand, shake it like a phone" }
-  ],
+    "[0, 1, 1, 0, 1]": [
+      {"when": {"touch": "ring"}, "label": "Н", "say": "Н", "kind": "letter", "hint": "Бас бармақ атсыз саусақпен сақина жасайды, қалғандары түзу"}
+    ],
 
-  "pairs": [
-    { "label": "6-7", "say": "67", "kind": "word",
-      "when": { "pairMotion": "alternate" },
-      "hint": "Two hands out, palms up: one rises while the other drops, back and forth" },
+    "[0, 1, 0, 1, 1]": [
+      {"when": {"touch": "middle"}, "label": "Р", "say": "Р", "kind": "letter", "hint": "Бас бармақ ортан саусақпен сақина жасайды, қалғандары түзу"}
+    ],
 
-    { "label": "Clap", "say": "Clap", "kind": "word",
-      "when": { "pairMotion": "clap" },
-      "hint": "Bring both hands together and apart twice" },
+    "[0, 0, 0, 1, 1]": {"label": "И", "say": "И", "kind": "letter", "hint": "Шынашақ пен атсыз саусақ жоғары, қалғандары бүгулі"},
 
-    { "label": "Big", "say": "Big", "kind": "word",
-      "when": { "pairMotion": "apart", "left": ["L"], "right": ["L"] },
-      "hint": "Two L hands, pull them apart" },
+    "[1, 0, 0, 1, 1]": {"label": "И", "say": "И", "kind": "letter", "hint": "Шынашақ пен атсыз саусақ жоғары, қалғандары бүгулі"},
 
-    { "label": "Book", "say": "Book", "kind": "word",
-      "when": { "pairMotion": "apart", "left": ["B", "5"], "right": ["B", "5"] },
-      "hint": "Two flat hands touching, open them like a book" },
+    "[0, 0, 0, 0, 1]": {"label": "І", "say": "І", "kind": "letter", "hint": "Шынашақ жоғары, қалғандары жұдырықта"},
 
-    { "label": "Small", "say": "Small", "kind": "word",
-      "when": { "pairMotion": "together", "left": ["B", "5"], "right": ["B", "5"] },
-      "hint": "Two flat hands, bring them closer together" },
+    "[1, 0, 0, 0, 1]": {"label": "У", "say": "У", "kind": "letter", "hint": "Бас бармақ пен шынашақ шығып тұрады, қалғандары бүгулі"},
 
-    { "label": "Pray", "say": "Pray", "kind": "word",
-      "when": { "left": ["B", "5"], "right": ["B", "5"], "gap": "overlap" },
-      "hint": "Palms pressed together, fingers up" },
+    "[0, 1, 0, 0, 1]": {"label": "Ы", "say": "Ы", "kind": "letter", "hint": "Сұқ саусақ пен шынашақ жоғары"},
 
-    { "label": "More", "say": "More", "kind": "word",
-      "when": { "left": ["O", "F", "C"], "right": ["O", "F", "C"], "gap": ["near", "overlap"] },
-      "hint": "Both hands in an O, fingertips together" },
+    "[1, 1, 0, 0, 1]": {"label": "Сені жақсы көремін", "say": "Сені жақсы көремін", "kind": "word", "hint": "Бас бармақ, сұқ саусақ және шынашақ шығып тұрады"},
 
-    { "label": "Love", "say": "Love", "kind": "word",
-      "when": { "left": ["S", "A"], "right": ["S", "A"], "gap": ["near", "overlap"] },
-      "hint": "Two fists crossed over your chest" },
+    "teachOnly": [
+      {"label": "Ф", "say": "Ф", "kind": "letter", "hint": "Тек «Үйрету» режимінде: түзу саусақтар 90° бүгулі, бас бармақ алақанға басылған"},
+      {"label": "Ю", "say": "Ю", "kind": "letter", "hint": "Тек «Үйрету» режимінде: саусақтар бас бармаққа тиеді, шынашақ жоғары"},
+      {"label": "Я", "say": "Я", "kind": "letter", "hint": "Тек «Үйрету» режимінде: ортан саусақ сұқ саусақтың үстінде айқасқан"}
+    ],
 
-    { "label": "Help", "say": "Help", "kind": "word",
-      "when": { "left": ["S", "A"], "right": ["B", "5"], "gap": ["near", "overlap"] },
-      "hint": "Fist resting on a flat palm" },
+    "motions": [
+      {"label": "Ә", "say": "Ә", "kind": "letter", "when": {"motion": "waveX", "hand": ["А"]}, "hint": "«А» қалпы, қолды екі жаққа шайқаңыз"},
+      {"label": "Ғ", "say": "Ғ", "kind": "letter", "when": {"motion": "waveX", "hand": ["Г"]}, "hint": "«Г» қалпы (қол төмен), қолды екі жаққа шайқаңыз"},
+      {"label": "Қ", "say": "Қ", "kind": "letter", "when": {"motion": "shakeY", "hand": ["К"]}, "hint": "«К» қалпы, қолды жоғары-төмен шайқаңыз"},
+      {"label": "Ң", "say": "Ң", "kind": "letter", "when": {"motion": "waveX", "hand": ["Н"]}, "hint": "«Н» қалпы, қолды екі жаққа шайқаңыз"},
+      {"label": "Ө", "say": "Ө", "kind": "letter", "when": {"motion": "waveX", "hand": ["О"]}, "hint": "«О» қалпы, қолды екі жаққа шайқаңыз"},
+      {"label": "Ү", "say": "Ү", "kind": "letter", "when": {"motion": "waveX", "hand": ["У"]}, "hint": "«У» қалпы, қолды екі жаққа шайқаңыз"},
+      {"label": "Ұ", "say": "Ұ", "kind": "letter", "when": {"motion": "swipeDown", "hand": ["У"]}, "hint": "«У» қалпы, қолды төмен түсіріңіз"},
+      {"label": "Һ", "say": "Һ", "kind": "letter", "when": {"motion": "waveX", "hand": ["Х"]}, "hint": "«Х» қалпы, қолды екі жаққа шайқаңыз"},
+      {"label": "Ё", "say": "Ё", "kind": "letter", "when": {"motion": "waveX", "hand": ["Е"]}, "hint": "«Е» қалпы, қолды екі жаққа бұраңыз"},
+      {"label": "Й", "say": "Й", "kind": "letter", "when": {"motion": "shakeY", "hand": ["И"]}, "hint": "«И» қалпы, қолды жоғары-төмен шайқаңыз"},
+      {"label": "Ц", "say": "Ц", "kind": "letter", "when": {"motion": "swipeDown", "hand": ["Б"]}, "hint": "«Б» қалпы, қолды төмен түсіріңіз"},
+      {"label": "Щ", "say": "Щ", "kind": "letter", "when": {"motion": "swipeDown", "hand": ["Ш"]}, "hint": "«Ш» қалпы, қолды төмен түсіріңіз"},
+      {"label": "Ъ", "say": "Ъ", "kind": "letter", "when": {"motion": "waveX", "hand": ["Ь"]}, "hint": "«Ь» қалпы, қолды екі жаққа шайқаңыз"},
+      {"label": "З", "say": "З", "kind": "letter", "track": "index", "when": {"hand": ["1", "Ь"]}, "path": [[0.1, 0.05], [0.6, 0.0], [0.9, 0.2], [0.5, 0.45], [0.9, 0.7], [0.6, 1.0], [0.05, 0.95]], "hint": "Сұқ саусақпен ауада «З» әрпін сызыңыз"},
+      {"label": "Д", "say": "Д", "kind": "letter", "track": "index", "when": {"hand": ["Б", "К"]}, "path": [[0.4, 0.0], [0.15, 0.85], [0.85, 0.85], [0.6, 0.0], [0.4, 0.0]], "hint": "Сұқ және ортан саусақпен ауада «Д» әрпін сызыңыз"},
+      {"label": "Сәлеметсіз бе", "say": "Сәлеметсіз бе", "kind": "word", "when": {"motion": "waveX", "hand": ["В", "5", "4"]}, "hint": "Ашық алақанды екі жаққа бұлғаңыз"},
+      {"label": "Сау болыңыз", "say": "Сау болыңыз", "kind": "word", "when": {"flap": "all"}, "hint": "Ашық алақан, саусақтарды екі рет бүгіп-жазыңыз"},
+      {"label": "Келіңіз", "say": "Келіңіз", "kind": "word", "when": {"flap": "index"}, "hint": "Сұқ саусақты өзіңізге қарай екі рет бүгіңіз"},
+      {"label": "Иә", "say": "Иә", "kind": "word", "when": {"motion": "shakeY", "hand": ["Е", "А"]}, "hint": "Жұдырықты жоғары-төмен изеңіз"},
+      {"label": "Жоқ", "say": "Жоқ", "kind": "word", "when": {"motion": "waveX", "hand": ["1"]}, "hint": "Сұқ саусақты екі жаққа шайқаңыз"},
+      {"label": "Өтінемін", "say": "Өтінемін", "kind": "word", "when": {"motion": "circle", "hand": ["В", "5", "4"]}, "hint": "Ашық алақанмен кеуде алдында шеңбер сызыңыз"},
+      {"label": "Кешіріңіз", "say": "Кешіріңіз", "kind": "word", "when": {"motion": "circle", "hand": ["Е", "А"]}, "hint": "Жұдырықпен кеуде алдында шеңбер сызыңыз"},
+      {"label": "Рақмет", "say": "Рақмет", "kind": "word", "when": {"motion": "swipeDown", "hand": ["В", "5", "4"]}, "hint": "Ашық алақанды иектен төмен және алға түсіріңіз"},
+      {"label": "Су", "say": "Су", "kind": "word", "when": {"motion": "shakeY", "hand": ["Ш"]}, "hint": "«Ш» қалпымен жоғары-төмен екі рет түртіңіз"},
+      {"label": "Тамақ", "say": "Тамақ", "kind": "word", "when": {"motion": "shakeY", "hand": ["О", "С"]}, "hint": "Саусақ ұштарын біріктіріп, аузыңызға екі рет апарыңыз"},
+      {"label": "Ішу", "say": "Ішу", "kind": "word", "when": {"motion": "swipeUp", "hand": ["С"]}, "hint": "«С» қалпын кесе ұстағандай жоғары көтеріңіз"},
+      {"label": "Қарным ашты", "say": "Қарным ашты", "kind": "word", "when": {"motion": "swipeDown", "hand": ["С"]}, "hint": "«С» қалпын кеуде бойымен төмен сырғытыңыз"},
+      {"label": "Кім?", "say": "Кім?", "kind": "word", "when": {"motion": "circle", "hand": ["1"]}, "hint": "Сұқ саусақпен шеңбер сызыңыз"}
+    ],
 
-    { "label": "Friend", "say": "Friend", "kind": "word",
-      "when": { "left": ["X"], "right": ["X"], "gap": ["near", "overlap"] },
-      "hint": "Both index fingers hooked together" },
-
-    { "label": "Play", "say": "Play", "kind": "word",
-      "when": { "left": ["Y"], "right": ["Y"], "gap": ["near", "far"] },
-      "hint": "Both hands in a Y (thumb and pinky out)" }
-  ]
+    "pairs": [
+      {"label": "Жарайсың", "say": "Жарайсың", "kind": "word", "when": {"pairMotion": "clap"}, "hint": "Екі рет қол шапалақтаңыз"},
+      {"label": "Үлкен", "say": "Үлкен", "kind": "word", "when": {"pairMotion": "apart", "left": ["Ь"], "right": ["Ь"]}, "hint": "Екі қол «Ь» қалпында, екі жаққа ажыратыңыз"},
+      {"label": "Кітап", "say": "Кітап", "kind": "word", "when": {"pairMotion": "apart", "left": ["В", "5"], "right": ["В", "5"]}, "hint": "Екі алақанды біріктіріп, кітап сияқты ашыңыз"},
+      {"label": "Кішкентай", "say": "Кішкентай", "kind": "word", "when": {"pairMotion": "together", "left": ["В", "5"], "right": ["В", "5"]}, "hint": "Екі алақанды бір-біріне жақындатыңыз"},
+      {"label": "Тағы", "say": "Тағы", "kind": "word", "when": {"left": ["О", "С"], "right": ["О", "С"], "gap": ["near", "overlap"]}, "hint": "Екі қолдың саусақ ұштары «О» қалпында түйіседі"},
+      {"label": "Махаббат", "say": "Махаббат", "kind": "word", "when": {"left": ["Е", "А"], "right": ["Е", "А"], "gap": ["near", "overlap"]}, "hint": "Екі жұдырық кеуде алдында айқасқан"},
+      {"label": "Көмектесіңіз", "say": "Көмектесіңіз", "kind": "word", "when": {"left": ["Е", "А"], "right": ["В", "5"], "gap": ["near", "overlap"]}, "hint": "Жұдырық ашық алақанның үстінде"},
+      {"label": "Дос", "say": "Дос", "kind": "word", "when": {"left": ["Х"], "right": ["Х"], "gap": ["near", "overlap"]}, "hint": "Екі сұқ саусақ ілмек сияқты ілініседі"},
+      {"label": "Ойнайық", "say": "Ойнайық", "kind": "word", "when": {"left": ["У"], "right": ["У"], "gap": ["near", "far"]}, "hint": "Екі қол «У» қалпында"}
+    ]
+  }
 }

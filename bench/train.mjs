@@ -41,7 +41,7 @@ for (let person = 0; person < PEOPLE; person++) {
   for (const [name, pose] of Object.entries(habits)) {
     for (let t = 0; t < TESTS; t++) {
       const P = buildHand(pose, J), view = { ...randView(pose), left };
-      const old = new OldEngine(json);
+      const old = new OldEngine(json.en || json);
       const e0 = new SignEngine(JSON.parse(JSON.stringify(json)));
       const e1 = new SignEngine(JSON.parse(JSON.stringify(json)), CFG, model);
       for (let f = 0; f < FR; f++) {
