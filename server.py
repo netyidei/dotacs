@@ -1,5 +1,23 @@
 #!/usr/bin/env python3
+"""dotacs server: serves the app and saves accounts, sentences and scores in PostgreSQL.
 
+Setup (once, nothing to install)
+  1. Make a free PostgreSQL database (for example on neon.tech) and copy its connection string.
+  2. Put it in a file called .env next to this file:
+         DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+  3. python server.py        then open http://localhost:8000
+
+On the first run the server creates the 3 tables from database/dotacs.sql (with sample data)
+and prints a password for a new admin account.
+
+How it keeps the database safe
+  * every query uses %s placeholders (parameterized), never text glued into SQL
+  * passwords are stored as PBKDF2 hashes with a random salt, never as plain text
+  * 5 wrong passwords in 15 minutes blocks that username from that computer
+  * every input is checked (type, length, allowed characters) before it reaches the database
+  * a user can only read and change their own rows; admin pages check the Role column
+  * the browser can only download the app's own files, never .env or the SQL files
+"""
 from __future__ import annotations
 
 import argparse
@@ -23,6 +41,17 @@ from minipg import dict_row
 
 ROOT = Path(__file__).resolve().parent
 SQL_FILE = ROOT / "database" / "dotacs.sql"
+
+# Assignment 4: the table for the smart feature's data. Also run on databases made before it existed.
+LOGS_DDL = """CREATE TABLE IF NOT EXISTS RecognitionLogs (
+    Log_ID       SERIAL       PRIMARY KEY,
+    User_ID      INT          NOT NULL REFERENCES Users(User_ID) ON DELETE CASCADE,
+    Sign         VARCHAR(40)  NOT NULL,                  -- what was recognised, e.g. 'A' or 'Hello'
+    Method       VARCHAR(10)  NOT NULL CHECK (Method IN ('hold', 'motion', 'pair')),
+    Confidence   NUMERIC(4,3) CHECK (Confidence BETWEEN 0 AND 1),  -- how sure the recogniser was
+    CreatedAt    TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS RecognitionLogs_Sign ON RecognitionLogs (Sign);"""
 
 # the only files the browser may download
 STATIC_FILES = {
@@ -201,7 +230,7 @@ def register(req, db, user, body, query):
 def login(req, db, user, body, query):
     username = str(body.get("username") or "").strip().lower()[:40]
     password = str(body.get("password") or "")[:128]
-    ip = req.client_address[0]
+    ip = req.visitor_ip
     if is_blocked(username, ip):
         raise ApiError(429, "Too many wrong passwords. Wait 15 minutes and try again.")
     row = db.execute("SELECT * FROM Users WHERE Username = %s", (username,)).fetchone()
@@ -314,13 +343,33 @@ def stats(req, db, user, body, query):
             "bestByCategory": {r["category"]: r["best"] for r in best}}
 
 
+@route("POST", "/api/logs", signed_in=True)
+def add_log(req, db, user, body, query):
+    """Records one sign the webcam recognised (the smart feature's data)."""
+    sign = text_field(body, "sign", 1, 40, "Sign")
+    method = body.get("method")
+    if method not in ("hold", "motion", "pair"):
+        raise ApiError(400, "method must be hold, motion or pair")
+    conf = body.get("confidence")
+    if conf is not None and (isinstance(conf, bool) or not isinstance(conf, (int, float)) or not 0 <= conf <= 1):
+        raise ApiError(400, "confidence must be a number from 0 to 1")
+    db.execute(
+        "INSERT INTO RecognitionLogs (User_ID, Sign, Method, Confidence) VALUES (%s, %s, %s, %s)",
+        (user["user_id"], sign, method, None if conf is None else round(float(conf), 3)),
+    )
+    db.commit()
+    return {"ok": True}, 201
+
+
 @route("GET", "/api/admin/overview", signed_in=True, admin=True)
 def admin_overview(req, db, user, body, query):
     counts = db.execute(
         """SELECT (SELECT COUNT(*) FROM Users) AS users, (SELECT COUNT(*) FROM Sentences) AS sentences,
-                  (SELECT COUNT(*) FROM Scores) AS scores, version() AS version"""
+                  (SELECT COUNT(*) FROM Scores) AS scores, (SELECT COUNT(*) FROM RecognitionLogs) AS logs,
+                  version() AS version"""
     ).fetchone()
-    return {"tables": {"Users": counts["users"], "Sentences": counts["sentences"], "Scores": counts["scores"]},
+    return {"tables": {"Users": counts["users"], "Sentences": counts["sentences"], "Scores": counts["scores"],
+                       "RecognitionLogs": counts["logs"]},
             "version": counts["version"].split(" on ")[0], "demoAllowed": req.is_local}
 
 
@@ -370,6 +419,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         sys.stderr.write("%s  %s\n" % (self.address_string(), fmt % args))
+
+    @property
+    def visitor_ip(self) -> str:
+        # On a hosting service every request comes through its proxy, which adds the visitor's address
+        if os.environ.get("PORT") and self.headers.get("X-Forwarded-For"):
+            return self.headers["X-Forwarded-For"].split(",")[-1].strip()
+        return self.client_address[0]
 
     @property
     def is_local(self) -> bool:
@@ -485,6 +541,7 @@ def setup_database(reset_admin: bool = False) -> None:
             db.execute(SQL_FILE.read_text(encoding="utf-8"))
             print("Created the tables and sample data from database/dotacs.sql")
             print("(sample accounts such as demo, maria, alex use the password 'signdemo2026')")
+        db.execute(LOGS_DDL)  # adds RecognitionLogs to a database created before Assignment 4
         admin = db.execute("SELECT User_ID FROM Users WHERE Role = 'admin' LIMIT 1").fetchone()
         password = secrets.token_urlsafe(9)
         if not admin:
@@ -503,7 +560,8 @@ def setup_database(reset_admin: bool = False) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="dotacs server")
-    parser.add_argument("--port", type=int, default=8000)
+    # On a hosting service (Render, Railway ...) the port comes from the PORT variable
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)))
     parser.add_argument("--reset-admin", action="store_true", help="print a new admin password and stop")
     args = parser.parse_args()
 
@@ -520,7 +578,9 @@ def main() -> None:
         if args.reset_admin:
             return
 
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    # Only this computer can open it, unless it runs on a hosting service (PORT is set there)
+    host = "0.0.0.0" if os.environ.get("PORT") else "127.0.0.1"
+    server = ThreadingHTTPServer((host, args.port), Handler)
     print(f"dotacs is running at http://localhost:{args.port}  (Ctrl+C to stop)")
     try:
         server.serve_forever()

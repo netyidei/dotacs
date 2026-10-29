@@ -2,6 +2,7 @@
 erDiagram
     Users ||--o{ Sentences : "speaks"
     Users ||--o{ Scores : "earns"
+    Users ||--o{ RecognitionLogs : "makes signs"
 
     Users {
         int User_ID PK
@@ -24,4 +25,12 @@ erDiagram
         int Points
         int SignsSolved
         timestamp PlayedAt
+    }
+    RecognitionLogs {
+        int Log_ID PK
+        int User_ID FK
+        varchar Sign
+        varchar Method "hold, motion or pair"
+        numeric Confidence "0 to 1"
+        timestamp CreatedAt
     }

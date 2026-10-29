@@ -30,6 +30,7 @@ export const api = {
   addSentence: (text) => call("POST", "/api/sentences", { text }),
   clearSentences: () => call("DELETE", "/api/sentences", {}),
 
+  addLog: (sign, method, confidence) => call("POST", "/api/logs", { sign, method, confidence }),
   addScore: (category, points, solved) => call("POST", "/api/scores", { category, points, solved }),
   stats: () => call("GET", "/api/stats"),
   leaderboard: (category) => call("GET", `/api/leaderboard?category=${encodeURIComponent(category)}`),

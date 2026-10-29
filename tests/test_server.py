@@ -203,6 +203,15 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.sql("SELECT COUNT(*) AS n FROM Sentences WHERE User_ID = %s", (uid,))[0]["n"], 0)
         self.assertEqual(self.sql("SELECT COUNT(*) AS n FROM Scores WHERE User_ID = %s", (uid,))[0]["n"], 0)
 
+    def test_recognition_logs(self):
+        b = self.new_user("logcheck")
+        self.assertEqual(b.post("/api/logs", {"sign": "Hello", "method": "motion", "confidence": 0.93})[0], 201)
+        self.assertEqual(b.post("/api/logs", {"sign": "A", "method": "hold", "confidence": 1.5})[0], 400)
+        self.assertEqual(b.post("/api/logs", {"sign": "A", "method": "typed", "confidence": 0.5})[0], 400)
+        self.assertEqual(self.browser().post("/api/logs", {"sign": "A", "method": "hold"})[0], 401)
+        rows = self.sql("SELECT Sign, Method FROM RecognitionLogs JOIN Users USING (User_ID) WHERE Username = %s", ("logcheck",))
+        self.assertEqual([(r["sign"], r["method"]) for r in rows], [("Hello", "motion")])
+
     # ---- admin
     def test_admin_pages_need_the_admin_role(self):
         b = self.new_user("notadmin")

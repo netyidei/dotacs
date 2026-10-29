@@ -644,6 +644,16 @@
     .keys dd { margin: 0; color: var(--muted); }
     .x { border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--muted); padding: 2px 6px; }
 
+    /* ---------- about dialog ---------- */
+    .about-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .about-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); }
+    .about-table td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .st { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+    .st.done { background: color-mix(in srgb, var(--mint) 18%, transparent); color: var(--mint); }
+    .st.part { background: color-mix(in srgb, #d9731c 18%, transparent); color: #b45309; }
+    .st.plan { background: var(--cobalt-soft); color: var(--cobalt); }
+    :root[data-theme="dark"] .st.part { color: #f2a65a; }
+
     /* ---------- account dialog ---------- */
     .tool .avatar {
       width: 20px; height: 20px; border-radius: 50%;
@@ -746,6 +756,9 @@
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
         <span class="avatar" hidden></span>
         <span class="lbl">Sign in</span>
+      </button>
+      <button class="tool icon" id="btn-about" title="About this prototype: what works and where data is stored" aria-label="About this prototype">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
       </button>
       <button class="tool icon" id="btn-settings" title="Settings and shortcuts (?)" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="18" cy="18" r="2.2"/></svg>
@@ -1012,6 +1025,48 @@
         <button class="mini" type="button" id="settings-reset">Restore default settings</button>
       </section>
     </form>
+  </dialog>
+
+  <dialog id="about" aria-labelledby="about-title">
+    <div class="settings acct">
+      <header>
+        <div>
+          <h2 id="about-title">About this prototype</h2>
+          <div class="acct-sub">What works today, and where your data goes</div>
+        </div>
+        <button class="x" type="button" id="about-close" aria-label="Close">&times;</button>
+      </header>
+      <section>
+        <h3>Where the data is stored</h3>
+        <table class="about-table">
+          <tr><th>Data</th><th>Stored in</th><th>Status</th></tr>
+          <tr><td>Camera picture</td><td>Nowhere: it never leaves your device</td><td><span class="st done">Working</span></td></tr>
+          <tr><td>Taught signs, settings, guest history</td><td>This browser (localStorage)</td><td><span class="st done">Working</span></td></tr>
+          <tr><td>Accounts, sentences, scores, recognition logs</td><td>PostgreSQL: tables Users, Sentences, Scores, RecognitionLogs</td><td><span class="st" id="about-db-status">Checking...</span></td></tr>
+        </table>
+        <p class="note" id="about-db-note" style="margin-top: 10px"></p>
+      </section>
+      <section>
+        <h3>Smart feature: the webcam as a sensor</h3>
+        <p class="note">The webcam films your hand; MediaPipe finds 21 points on it about 30 times a second, in the browser. Our engine (recognizer.js) turns the points into a sign and a confidence. Signed in, each recognised sign, its method and confidence are saved in RecognitionLogs, so we can see which signs are hard to recognise. <span class="st done">Working</span></p>
+      </section>
+      <section>
+        <h3>Functions</h3>
+        <table class="about-table">
+          <tr><th>Function</th><th>Status</th></tr>
+          <tr><td>Sign to text: 54 letters, numbers and words, incl. moving and two-hand signs</td><td><span class="st done">Done</span></td></tr>
+          <tr><td>Read the sentence aloud (Speak)</td><td><span class="st done">Done</span></td></tr>
+          <tr><td>Teach mode: learns your own hands</td><td><span class="st done">Done</span></td></tr>
+          <tr><td>60-second practice game</td><td><span class="st done">Done</span></td></tr>
+          <tr><td>Accounts, saved sentences and scores, leaderboard</td><td><span class="st done">Done</span> (needs our server)</td></tr>
+          <tr><td>Recognition logs for data analysis</td><td><span class="st done">Done</span> (needs our server)</td></tr>
+          <tr><td>Use on a phone</td><td><span class="st part">Partly</span>: works in the browser; speed depends on the phone</td></tr>
+          <tr><td>Taught signs on another computer</td><td><span class="st part">Partly</span>: by saving them to a file</td></tr>
+          <tr><td>Kazakh and Russian sign words</td><td><span class="st plan">Planned</span></td></tr>
+          <tr><td>Whole sign-language sentences and grammar</td><td><span class="st plan">Planned</span></td></tr>
+        </table>
+      </section>
+    </div>
   </dialog>
 
   <dialog id="account" aria-labelledby="acct-title">
@@ -1538,11 +1593,16 @@
       updateSuggestions();
     }
 
-    function addToken(rule) {
+    function addToken(rule, method = "hold", conf = null) {
       const origin = burstOrigin();
       if (game.active) {
         if (game.mode !== "teach") gameOnSign(rule, origin);
         return;
+      }
+      // Assignment 4: every recognised sign of a signed-in user goes to the RecognitionLogs table
+      if (account.user) {
+        const c = typeof conf === "number" ? Math.round(clamp01(conf) * 1000) / 1000 : null;
+        api.addLog(rule.say, method, c).then(r => { if (!r.ok && r.status === 401) syncProblem(r); });
       }
 
       if (rule.kind === "letter" || rule.kind === "number") {
@@ -1874,7 +1934,7 @@
         progress = (now - hold.since) / H.holdMs;
         hint = `Hold to ${verb} “${rule.say}”`;
         if (progress >= 1) {
-          addToken(rule);
+          addToken(rule, "hold", shownConf);
           hold.committed = true;
           hold.commitAt = now;
           progress = 1; done = true;
@@ -1885,7 +1945,7 @@
         if (rule.kind !== "word") {
           hint = `Added “${rule.say}”. Keep holding to type it again.`;
           progress = (now - hold.commitAt) / H.repeatMs;
-          if (progress >= 1) { addToken(rule); hold.commitAt = now; progress = 0; }
+          if (progress >= 1) { addToken(rule, "hold", shownConf); hold.commitAt = now; progress = 0; }
         } else {
           hint = `Added “${rule.say}”`;
           progress = 1;
@@ -1903,7 +1963,7 @@
       motionToast.classList.remove("show");
       void motionToast.offsetWidth;
       motionToast.classList.add("show");
-      addToken(ev.rule);
+      addToken(ev.rule, ev.source === "pair" ? "pair" : "motion", ev.p);
     }
 
     // ------------------------------------------------------------------
@@ -2542,6 +2602,22 @@
       if (!signed) $("acct-user").focus();
     }
     acctBtn.addEventListener("click", openAccount);
+
+    // ----- About this prototype: says honestly whether the database part is working on this link
+    const aboutDlg = $("about");
+    $("btn-about").addEventListener("click", () => {
+      const st = $("about-db-status"), note = $("about-db-note");
+      if (account.online) {
+        st.className = "st done"; st.textContent = "Working";
+        note.textContent = "This copy is connected to our server and PostgreSQL database. Sign in to save your data.";
+      } else {
+        st.className = "st plan"; st.textContent = "Shown only";
+        note.textContent = "This copy runs without our server, so the database part is only described here and everything stays in your browser. With server.py running, accounts and saving work (see README).";
+      }
+      if (!aboutDlg.open) aboutDlg.showModal();
+    });
+    $("about-close").addEventListener("click", () => aboutDlg.close());
+    aboutDlg.addEventListener("click", (e) => { if (e.target === aboutDlg) aboutDlg.close(); });
     $("acct-close").addEventListener("click", () => acctDlg.close());
     acctDlg.addEventListener("click", (e) => { if (e.target === acctDlg) acctDlg.close(); });
 

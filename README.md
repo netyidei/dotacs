@@ -1,8 +1,9 @@
 # dotacs: sign to speech
 
 dotacs reads sign language from a webcam, writes it as text and reads it aloud.
-Users can sign in so the sentences they speak and their practice game scores are saved
-in a **PostgreSQL** database.
+Users can sign in so the sentences they speak, their practice game scores and a log of the signs
+the app recognised are saved in a **PostgreSQL** database. The **About** button in the app shows
+the main scenario, where the data is stored and which functions are done, partly done or planned.
 
 ## Run it
 
@@ -33,9 +34,26 @@ Sample accounts: `demo`, `maria`, `alex` and others, all with the password `sign
 
 Without steps 1 and 2 the app still works, just without accounts (nothing is saved in the database).
 
+## Put it online (a link anyone can open, no login)
+
+The camera only works on `https://` pages (or `localhost`), so use a free host that gives you HTTPS.
+
+**Quick: GitHub Pages (guest mode, no database).** Make a public GitHub repository, upload these files,
+then Settings → Pages → Branch `main` → Save. The link looks like `https://yourname.github.io/dotacs/`.
+Sign to text, Speak, Teach mode and the practice game all work there; accounts do not (there is no
+server), and the About panel says so honestly ("Shown only").
+
+**Full: Render (with the database).** On [render.com](https://render.com) make a *Web Service* from the
+same repository: Runtime *Python*, Build command *(leave empty)*, Start command `python server.py`, and add
+an environment variable `DATABASE_URL` with your Neon connection string. The server reads Render's `PORT`
+by itself. The free plan sleeps when nobody uses it, so the first visit can take about a minute.
+
+**QR code for the poster:** paste the final link into any QR generator (for example the
+"Create QR code" option in Chrome's share menu) and download it as PNG, at least 6 × 6 cm on the poster.
+
 ## The database
 
-PostgreSQL, **3 tables**. Each table is like a spreadsheet: one row per item.
+PostgreSQL, **4 tables**. Each table is like a spreadsheet: one row per item.
 
 ![ERD](database/erd.png)
 
@@ -44,11 +62,17 @@ PostgreSQL, **3 tables**. Each table is like a spreadsheet: one row per item.
 | **Users** | one account | User_ID (INT, primary key), Username (VARCHAR, unique), Email (VARCHAR, unique), PasswordHash (VARCHAR), Role (VARCHAR: user or admin), CreatedAt (TIMESTAMP) |
 | **Sentences** | one sentence a user had the app speak | Sentence_ID (INT, primary key), User_ID (INT, foreign key to Users), SentenceText (VARCHAR), CreatedAt (TIMESTAMP) |
 | **Scores** | one round of the 60-second practice game | Score_ID (INT, primary key), User_ID (INT, foreign key to Users), Category (VARCHAR), Points (INT), SignsSolved (INT), PlayedAt (TIMESTAMP) |
+| **RecognitionLogs** *(new in Assignment 4)* | one sign the app recognised for a signed-in user | Log_ID (INT, primary key), User_ID (INT, foreign key to Users), Sign (VARCHAR), Method (VARCHAR: hold, motion or pair), Confidence (NUMERIC 0 to 1), CreatedAt (TIMESTAMP) |
 
 - **Primary key:** the row's own unique number (like a student ID).
 - **Foreign key:** a column that points to a row in another table. `Sentences.User_ID` says whose sentence it is.
-- **One-to-many:** one user has many sentences and many scores.
-- **ON DELETE CASCADE:** when a user deletes their account, their sentences and scores are deleted too.
+- **One-to-many:** one user has many sentences, scores and recognition logs.
+- **ON DELETE CASCADE:** when a user deletes their account, their sentences, scores and logs are deleted too.
+
+**Why RecognitionLogs:** it is the "smart" data of the project. Each row says which sign the webcam saw,
+how (held still, a motion, or a two-hand sign) and how sure the recogniser was. Grouping it by sign
+(query g) shows which signs the app finds hardest, so we know what to improve next. Only the sign name
+and numbers are stored, never camera images.
 
 ### Where the app uses it
 
@@ -59,6 +83,7 @@ PostgreSQL, **3 tables**. Each table is like a spreadsheet: one row per item.
 | Press **Speak** | `INSERT INTO Sentences ...` |
 | Open the **History** tab | `SELECT ... FROM Sentences WHERE User_ID = %s` |
 | Finish a practice round | `INSERT INTO Scores ...` |
+| Make a sign while signed in | `INSERT INTO RecognitionLogs ...` |
 | Open the leaderboard | `SELECT ... FROM Users JOIN Scores ... GROUP BY ...` |
 | Delete your account | `DELETE FROM Users WHERE User_ID = %s` |
 
@@ -108,8 +133,10 @@ db.execute("SELECT * FROM Users WHERE Username = %s", (username,))
 | `api.js` | how the page talks to the server |
 | `server.py` | web server + all database code |
 | `minipg.py` | built-in PostgreSQL connector: encrypted connection, password login, parameterized queries |
-| `database/dotacs.sql` | creates the 3 tables and the sample data (the .sql appendix; runs in Neon's SQL Editor too) |
-| `database/queries.sql` | the queries above, plus insert, leaderboard and delete |
+| `database/dotacs.sql` | creates the 4 tables and the sample data (the .sql appendix; runs in Neon's SQL Editor too) |
+| `database/queries.sql` | the queries above, plus insert, leaderboard, delete, and two queries on RecognitionLogs (g, h) |
 | `database/erd.png`, `database/erd.mmd` | the ERD (image, and Mermaid source for mermaid.live) |
 | `database/screenshots/` | every query with its result, the data in each table, the table structure |
-| `tests/test_server.py` | 16 security tests (they erase the tables they use, so give them an empty test database: `TEST_DATABASE_URL=... python -m unittest discover tests`) |
+| `data/dotacs-data-analysis.xlsx` | data analysis: sheet *Data* (accuracy per sign, first vs current version, and RecognitionLogs rows) and sheet *Analysis* (formulas, findings, chart) |
+| `bench/` | accuracy tests on simulated hands (needs Node.js): `node bench/noisy.mjs 60` gives 78.8% → 92.9%, `node bench/train.mjs` gives 91.0% → 99.4% after Teach mode. `old.mjs` is the first version, kept for comparison |
+| `tests/test_server.py` | 17 tests (they erase the tables they use, so give them an empty test database: `TEST_DATABASE_URL=... python -m unittest discover tests`) |

@@ -1,10 +1,23 @@
-DROP TABLE IF EXISTS Scores, Sentences, Users;
+-- dotacs database (PostgreSQL)
+--
+-- 4 tables:
+--   Users            one row per account
+--   Sentences        sentences a user turned into speech
+--   Scores           results of the 60-second practice game
+--   RecognitionLogs  every sign the webcam recognised for a signed-in user (added in Assignment 4)
+--
+-- Run this whole file in your PostgreSQL SQL editor (Neon, Supabase, db-fiddle) or with psql.
+-- It creates the tables and fills them with sample data.
+-- Every sample account uses the password: signdemo2026
+
+-- start fresh (removes old copies of these tables)
+DROP TABLE IF EXISTS RecognitionLogs, Scores, Sentences, Users;
 
 CREATE TABLE Users (
     User_ID      SERIAL       PRIMARY KEY,
     Username     VARCHAR(20)  NOT NULL UNIQUE,
     Email        VARCHAR(254) NOT NULL UNIQUE,
-    PasswordHash VARCHAR(255) NOT NULL,
+    PasswordHash VARCHAR(255) NOT NULL,             -- a scrambled (hashed) password, never the password itself
     Role         VARCHAR(10)  NOT NULL DEFAULT 'user' CHECK (Role IN ('user', 'admin')),
     CreatedAt    TIMESTAMP    NOT NULL DEFAULT NOW()
 );
@@ -25,7 +38,19 @@ CREATE TABLE Scores (
     PlayedAt     TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
+-- speeds up the leaderboard
 CREATE INDEX Scores_Category_Points ON Scores (Category, Points DESC);
+
+-- added in Assignment 4: data produced by the smart (webcam) feature
+CREATE TABLE IF NOT EXISTS RecognitionLogs (
+    Log_ID       SERIAL       PRIMARY KEY,
+    User_ID      INT          NOT NULL REFERENCES Users(User_ID) ON DELETE CASCADE,
+    Sign         VARCHAR(40)  NOT NULL,                  -- what was recognised, e.g. 'A' or 'Hello'
+    Method       VARCHAR(10)  NOT NULL CHECK (Method IN ('hold', 'motion', 'pair')),
+    Confidence   NUMERIC(4,3) CHECK (Confidence BETWEEN 0 AND 1),  -- how sure the recogniser was
+    CreatedAt    TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS RecognitionLogs_Sign ON RecognitionLogs (Sign);
 
 
 -- ---------------------------------------------------------------- sample data
@@ -69,3 +94,23 @@ INSERT INTO Scores (User_ID, Category, Points, SignsSolved, PlayedAt) VALUES
     ((SELECT User_ID FROM Users WHERE Username = 'nadia'), 'letters', 5299, 31, '2026-10-21 17:03'),
     ((SELECT User_ID FROM Users WHERE Username = 'leo'), 'words', 2105, 14, '2026-10-21 17:10'),
     ((SELECT User_ID FROM Users WHERE Username = 'sara'), 'letters', 4960, 28, '2026-10-21 17:17');
+
+INSERT INTO RecognitionLogs (User_ID, Sign, Method, Confidence, CreatedAt) VALUES
+    ((SELECT User_ID FROM Users WHERE Username = 'maria'), 'Hello', 'motion', 0.94, '2026-10-12 09:04:40'),
+    ((SELECT User_ID FROM Users WHERE Username = 'maria'), 'Friend', 'pair', 0.88, '2026-10-12 09:04:52'),
+    ((SELECT User_ID FROM Users WHERE Username = 'alex'), 'Water', 'motion', 0.91, '2026-10-13 11:09:30'),
+    ((SELECT User_ID FROM Users WHERE Username = 'alex'), 'Please', 'motion', 0.86, '2026-10-13 11:09:41'),
+    ((SELECT User_ID FROM Users WHERE Username = 'demo'), 'Hello', 'motion', 0.97, '2026-10-13 15:21:50'),
+    ((SELECT User_ID FROM Users WHERE Username = 'demo'), 'I love you', 'hold', 0.99, '2026-10-13 15:22:01'),
+    ((SELECT User_ID FROM Users WHERE Username = 'demo'), 'C', 'hold', 0.81, '2026-10-16 10:11:20'),
+    ((SELECT User_ID FROM Users WHERE Username = 'demo'), 'A', 'hold', 0.64, '2026-10-16 10:11:28'),
+    ((SELECT User_ID FROM Users WHERE Username = 'demo'), 'B', 'hold', 0.92, '2026-10-16 10:11:35'),
+    ((SELECT User_ID FROM Users WHERE Username = 'lina'), 'Eat', 'motion', 0.79, '2026-10-14 11:59:40'),
+    ((SELECT User_ID FROM Users WHERE Username = 'lina'), 'More', 'pair', 0.83, '2026-10-14 11:59:50'),
+    ((SELECT User_ID FROM Users WHERE Username = 'nadia'), 'Sorry', 'motion', 0.72, '2026-10-15 16:04:30'),
+    ((SELECT User_ID FROM Users WHERE Username = 'nadia'), 'Bye', 'motion', 0.95, '2026-10-15 16:04:42'),
+    ((SELECT User_ID FROM Users WHERE Username = 'sara'), 'Good', 'hold', 0.98, '2026-10-17 14:49:30'),
+    ((SELECT User_ID FROM Users WHERE Username = 'maria'), 'Y', 'hold', 0.9, '2026-10-19 19:14:40'),
+    ((SELECT User_ID FROM Users WHERE Username = 'maria'), 'O', 'hold', 0.61, '2026-10-19 19:14:47'),
+    ((SELECT User_ID FROM Users WHERE Username = 'maria'), 'U', 'hold', 0.69, '2026-10-19 19:14:55'),
+    ((SELECT User_ID FROM Users WHERE Username = 'yuki'), 'Help', 'pair', 0.93, '2026-10-15 08:44:50');
